@@ -1,3 +1,4 @@
+import OSLog
 import SwiftData
 import SwiftUI
 
@@ -9,6 +10,8 @@ struct InsightView: View {
     @Bindable var meeting: Meeting
     @State private var selectedTab: DetailTab = .notes
     @State private var isRegenerating = false
+    @State private var shareItems: [Any]? = nil
+    @State private var shareError: String? = nil
 
     private let insightGenerator = LocalInsightGenerator()
     private let speakerLabeler = SpeakerLabeler()
@@ -100,6 +103,34 @@ struct InsightView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    do {
+                        shareItems = try MeetingExportService.shareItems(for: meeting)
+                    } catch {
+                        shareError = error.localizedDescription
+                        DeepPocketLog.export.debug("InsightView share failed: \(String(describing: error), privacy: .public)")
+                    }
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+        }
+        .sheet(item: Binding(
+            get: { shareItems.map { ShareItemsWrapper(items: $0) } },
+            set: { shareItems = $0?.items }
+        )) { wrapper in
+            MeetingShareSheet(items: wrapper.items)
+        }
+        .alert("Could not prepare share", isPresented: Binding(
+            get: { shareError != nil },
+            set: { if !$0 { shareError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(shareError ?? "")
+        }
     }
 
     @ViewBuilder
@@ -584,6 +615,11 @@ private enum DetailTab: String, CaseIterable, Identifiable {
     case highlights = "Highlight"
 
     var id: String { rawValue }
+}
+
+private struct ShareItemsWrapper: Identifiable {
+    let id = UUID()
+    let items: [Any]
 }
 
 private extension Date {
