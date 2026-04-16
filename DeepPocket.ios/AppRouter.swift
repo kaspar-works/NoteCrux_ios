@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 
 /// Shared coordinator for intent → app navigation.
 /// Siri intents post requests here; ContentView observes and reacts.
