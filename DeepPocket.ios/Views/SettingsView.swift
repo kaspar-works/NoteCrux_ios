@@ -1,3 +1,4 @@
+import OSLog
 import SwiftData
 import SwiftUI
 
@@ -6,6 +7,7 @@ struct SettingsView: View {
     @Query private var meetings: [Meeting]
     @Query private var folders: [MeetingFolder]
     @Query private var tasks: [MeetingActionItem]
+    @Query(sort: \Meeting.createdAt, order: .reverse) private var allMeetings: [Meeting]
 
     @AppStorage("modelMode") private var modelMode = "Battery-Saver"
     @AppStorage("selfDestructDays") private var selfDestructDays = 0
@@ -22,6 +24,9 @@ struct SettingsView: View {
     @State private var backupURL: URL?
     @State private var statusMessage: String?
     @State private var showDeleteConfirmation = false
+    @State private var bulkExportURL: URL? = nil
+    @State private var bulkExportError: String? = nil
+    @State private var isExporting = false
 
     var body: some View {
         NavigationStack {
@@ -122,6 +127,56 @@ struct SettingsView: View {
                             }
                         }
 
+                        VStack(alignment: .leading, spacing: 11) {
+                            ProfileSectionTitle("BULK EXPORT")
+
+                            ProfileCard(spacing: 0) {
+                                Button {
+                                    Task {
+                                        isExporting = true
+                                        defer { isExporting = false }
+                                        do {
+                                            bulkExportURL = try MeetingExportService.exportAll(allMeetings)
+                                        } catch {
+                                            bulkExportError = error.localizedDescription
+                                            DeepPocketLog.export.debug("Bulk export failed: \(String(describing: error), privacy: .public)")
+                                        }
+                                    }
+                                } label: {
+                                    HStack(spacing: 14) {
+                                        ProfileIcon(
+                                            icon: "arrow.up.doc.on.clipboard",
+                                            color: Color(red: 0.04, green: 0.42, blue: 0.43)
+                                        )
+
+                                        Text(isExporting ? "Preparing archive…" : "Export all meetings")
+                                            .font(.system(size: 15, weight: .bold))
+                                            .foregroundStyle(Color.profileInk)
+
+                                        Spacer()
+
+                                        if isExporting {
+                                            ProgressView()
+                                        } else {
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 10, weight: .bold))
+                                                .foregroundStyle(Color.profileMuted.opacity(0.75))
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 15)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(isExporting || allMeetings.isEmpty)
+                            }
+
+                            Text("Creates a zip of markdown files. Audio files are available via the per-meeting share button.")
+                                .font(.caption)
+                                .foregroundStyle(Color.profileMuted)
+                                .padding(.horizontal, 12)
+                        }
+
                         PrivacyGuaranteeCard()
 
                         if let statusMessage {
@@ -150,6 +205,20 @@ struct SettingsView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(item: Binding(
+                get: { bulkExportURL.map { BulkExportWrapper(url: $0) } },
+                set: { bulkExportURL = $0?.url }
+            )) { wrapper in
+                MeetingShareSheet(items: [wrapper.url])
+            }
+            .alert("Export failed", isPresented: Binding(
+                get: { bulkExportError != nil },
+                set: { if !$0 { bulkExportError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(bulkExportError ?? "")
+            }
             .confirmationDialog(
                 "Delete all local DeepPocket data?",
                 isPresented: $showDeleteConfirmation,
@@ -519,6 +588,11 @@ private struct LanguageProfileSettings: View {
         }
         .navigationTitle("Language")
     }
+}
+
+private struct BulkExportWrapper: Identifiable {
+    let id = UUID()
+    let url: URL
 }
 
 private extension Color {
