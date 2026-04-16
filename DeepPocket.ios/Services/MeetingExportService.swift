@@ -171,4 +171,92 @@ enum MeetingExportService {
         let seconds = Int(duration) % 60
         return "\(minutes)m \(seconds)s"
     }
+
+    /// Items suitable for presenting in a `UIActivityViewController`.
+    /// Writes the markdown to a temp file so it travels nicely to Mail, Files, Messages.
+    static func shareItems(for meeting: Meeting) throws -> [Any] {
+        let markdown = markdown(for: meeting)
+        let tempDir = FileManager.default.temporaryDirectory
+        let safeTitle = sanitizedFilenameSegment(meeting.title)
+        let datePart = isoDate(meeting.createdAt)
+        let mdURL = tempDir.appendingPathComponent("\(safeTitle)__\(datePart).md")
+        try markdown.write(to: mdURL, atomically: true, encoding: .utf8)
+
+        var items: [Any] = [mdURL]
+        if let audioPath = meeting.audioFilePath {
+            let audioURL = URL(fileURLWithPath: audioPath)
+            if FileManager.default.fileExists(atPath: audioURL.path) {
+                items.append(audioURL)
+            }
+        }
+        return items
+    }
+
+    /// Produces a zip of markdown files (one per meeting) in a temp directory.
+    /// Files are named `<sanitized-title>__<ISO-date>.md`.
+    /// Returns the zip URL.
+    static func exportAll(_ meetings: [Meeting]) throws -> URL {
+        let tempDir = FileManager.default.temporaryDirectory
+        let stageDir = tempDir.appendingPathComponent("deeppocket-export-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: stageDir, withIntermediateDirectories: true)
+
+        for meeting in meetings {
+            let safeTitle = sanitizedFilenameSegment(meeting.title)
+            let datePart = isoDate(meeting.createdAt)
+            let fileURL = stageDir.appendingPathComponent("\(safeTitle)__\(datePart).md")
+            let md = markdown(for: meeting)
+            try md.write(to: fileURL, atomically: true, encoding: .utf8)
+        }
+
+        let zipURL = tempDir.appendingPathComponent("DeepPocket-Export-\(isoDate(Date())).zip")
+        try zipDirectory(stageDir, to: zipURL)
+        return zipURL
+    }
+
+    private static func sanitizedFilenameSegment(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
+        let scalars = trimmed.unicodeScalars.map { allowed.contains($0) ? Character($0) : "-" }
+        let collapsed = String(scalars).replacingOccurrences(of: "-+", with: "-", options: .regularExpression)
+        let stripped = collapsed.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        return stripped.isEmpty ? "Untitled" : stripped
+    }
+
+    private static func isoDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone.current
+        return f.string(from: date)
+    }
+
+    /// Zips the given directory using Foundation's NSFileCoordinator via archive-by-copy.
+    /// Uses `NSFileCoordinator.coordinate(readingItemAt:options:.forUploading, ...)`, which
+    /// produces a zip archive suitable for the share sheet.
+    private static func zipDirectory(_ source: URL, to destination: URL) throws {
+        let coordinator = NSFileCoordinator()
+        var coordError: NSError?
+        var closureError: NSError?
+        var resultURL: URL?
+        coordinator.coordinate(readingItemAt: source, options: [.forUploading], error: &coordError) { tmpURL in
+            do {
+                if FileManager.default.fileExists(atPath: destination.path) {
+                    try FileManager.default.removeItem(at: destination)
+                }
+                try FileManager.default.copyItem(at: tmpURL, to: destination)
+                resultURL = destination
+            } catch {
+                closureError = error as NSError
+            }
+        }
+        if let err = coordError ?? closureError { throw err }
+        guard resultURL != nil else {
+            throw NSError(
+                domain: "MeetingExportService",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "Zip archive creation failed."]
+            )
+        }
+    }
 }
