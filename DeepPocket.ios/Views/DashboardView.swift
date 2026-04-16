@@ -1,11 +1,14 @@
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Meeting.createdAt, order: .reverse) private var meetings: [Meeting]
     @Query private var actionItems: [MeetingActionItem]
     @Binding var isRecording: Bool
+    @Binding var recordingInitialContext: RecordingRoomView.InitialContext?
+    @StateObject private var calendarService = CalendarImportService.shared
     @State private var recoveredDraft: RecordingDraft?
 
     private let draftKey = "activeRecordingDraft"
@@ -78,6 +81,8 @@ struct DashboardView: View {
                             }
                         }
 
+                        agendaSection
+
                         HStack(alignment: .firstTextBaseline) {
                             Text("Recent Meetings")
                                 .font(.system(size: 20, weight: .bold))
@@ -137,6 +142,7 @@ struct DashboardView: View {
         }
         .task {
             loadDraft()
+            await calendarService.refresh()
         }
     }
 
@@ -219,6 +225,100 @@ struct DashboardView: View {
         }
         try? modelContext.save()
     }
+
+    @ViewBuilder
+    private var agendaSection: some View {
+        switch calendarService.authorizationState {
+        case .granted:
+            if calendarService.events.isEmpty {
+                EmptyView()
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Today's agenda")
+                        .font(.headline)
+                    if calendarService.todaysEvents.isEmpty {
+                        Text("No events today.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(calendarService.todaysEvents) { event in
+                            agendaRow(event: event)
+                        }
+                    }
+                    if !calendarService.upcomingEvents.isEmpty {
+                        Divider().padding(.top, 4)
+                        Text("Upcoming")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        ForEach(calendarService.upcomingEvents.prefix(5)) { event in
+                            agendaRow(event: event)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+        case .denied:
+            calendarDeniedCard
+        case .notDetermined:
+            EmptyView()
+        }
+    }
+
+    private func agendaRow(event: CalendarEventSummary) -> some View {
+        Button {
+            recordingInitialContext = RecordingRoomView.InitialContext(
+                title: event.title,
+                tags: event.attendees
+            )
+            isRecording = true
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(event.title).font(.subheadline.weight(.medium))
+                    Text(Self.timeFormatter.string(from: event.startDate))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "mic.circle.fill")
+                    .foregroundStyle(.tint)
+            }
+            .padding(.vertical, 6)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var calendarDeniedCard: some View {
+        HStack(alignment: .top) {
+            Image(systemName: "calendar.badge.exclamationmark")
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Calendar access is off")
+                    .font(.subheadline.weight(.semibold))
+                Text("Enable calendar access in Settings to see today's agenda.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Button("Enable") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                .font(.caption.weight(.semibold))
+                .padding(.top, 2)
+            }
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f
+    }()
 
     private func followUpScore(_ item: MeetingActionItem) -> Int {
         var score = 0

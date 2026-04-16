@@ -10,6 +10,7 @@ struct ContentView: View {
     @AppStorage("themeMode") private var themeMode = "System"
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var isRecording = false
+    @State private var recordingInitialContext: RecordingRoomView.InitialContext? = nil
     @State private var isUnlocked = false
 
     var body: some View {
@@ -28,7 +29,10 @@ struct ContentView: View {
     private var mainApp: some View {
         ZStack {
             TabView {
-                DashboardView(isRecording: $isRecording)
+                DashboardView(
+                    isRecording: $isRecording,
+                    recordingInitialContext: $recordingInitialContext
+                )
                     .tabItem {
                         Label("Home", systemImage: "house.fill")
                     }
@@ -54,8 +58,8 @@ struct ContentView: View {
                     }
             }
             .tint(Color(red: 0.25, green: 0.18, blue: 0.86))
-            .sheet(isPresented: $isRecording) {
-                RecordingRoomView()
+            .sheet(isPresented: $isRecording, onDismiss: { recordingInitialContext = nil }) {
+                RecordingRoomView(initialContext: recordingInitialContext)
             }
             .blur(radius: shouldShowLock ? 12 : 0)
 
