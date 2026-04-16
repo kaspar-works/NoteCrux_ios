@@ -3,7 +3,6 @@ import SwiftUI
 import LocalAuthentication
 
 struct VaultView: View {
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Meeting.createdAt, order: .reverse) private var meetings: [Meeting]
     @Query(sort: \MeetingFolder.name) private var folders: [MeetingFolder]
@@ -40,14 +39,14 @@ struct VaultView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                NoteCruxTheme.background(for: colorScheme).ignoresSafeArea()
+                Color.ncBackground.ignoresSafeArea()
 
                 if requireBiometrics && !isUnlocked {
                     LockedVaultView(message: authenticationMessage) {
                         authenticate()
                     }
                 } else {
-                    VStack(spacing: 10) {
+                    VStack(spacing: NCSpacing.md) {
                         VaultFiltersView(
                             folders: folders,
                             availableTags: availableTags,
@@ -57,7 +56,7 @@ struct VaultView: View {
                             importanceFilter: $importanceFilter,
                             createFolder: { isCreatingFolder = true }
                         )
-                        .padding(.horizontal)
+                        .padding(.horizontal, NCSpacing.lg)
 
                         if filteredMeetings.isEmpty {
                             ContentUnavailableView(
@@ -149,9 +148,9 @@ private struct VaultFiltersView: View {
     let createFolder: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: NCSpacing.md) {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: NCSpacing.sm) {
                     FilterChip(title: "All Folders", isSelected: selectedFolderID == nil) {
                         selectedFolderID = nil
                     }
@@ -164,9 +163,9 @@ private struct VaultFiltersView: View {
 
                     Button(action: createFolder) {
                         Label("Folder", systemImage: "plus")
-                            .font(.caption.weight(.bold))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 7)
+                            .font(.ncCaption1)
+                            .padding(.horizontal, NCSpacing.md)
+                            .padding(.vertical, NCSpacing.sm)
                     }
                     .buttonStyle(.bordered)
                 }
@@ -204,11 +203,11 @@ private struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.caption.weight(.bold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .foregroundStyle(isSelected ? .black : .primary)
-                .background(isSelected ? Color.green : Color.primary.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                .font(.ncCaption1)
+                .padding(.horizontal, NCSpacing.md)
+                .padding(.vertical, NCSpacing.sm)
+                .foregroundStyle(isSelected ? .white : Color.ncSecondary)
+                .background(isSelected ? Color.ncPurple : Color.ncPurple.opacity(0.12), in: Capsule())
         }
         .buttonStyle(.plain)
     }
@@ -219,25 +218,25 @@ private struct LockedVaultView: View {
     let unlock: () -> Void
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: NCSpacing.xl) {
             Image(systemName: "faceid")
                 .font(.system(size: 52, weight: .medium))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.ncPurple)
 
             Text("Vault Locked")
-                .font(.title.bold())
+                .font(.ncTitle1)
 
             Text(message ?? "Use Face ID to open your private meeting archive.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(.ncBody)
+                .foregroundStyle(Color.ncMuted)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 28)
+                .padding(.horizontal, NCSpacing.xxxl)
 
             Button("Unlock Vault", action: unlock)
                 .buttonStyle(.borderedProminent)
-                .tint(.green)
+                .tint(Color.ncPurple)
         }
-        .padding(24)
+        .padding(NCSpacing.xxl)
     }
 }
 
@@ -245,44 +244,44 @@ private struct MeetingRow: View {
     let meeting: Meeting
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: NCSpacing.sm) {
             HStack {
                 Text(meeting.title)
-                    .font(.headline)
+                    .font(.ncHeadline)
                 Spacer()
                 Text(meeting.createdAt, style: .date)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.ncCaption1)
+                    .foregroundStyle(Color.ncMuted)
             }
 
             Text(meeting.summary.isEmpty ? "No summary available." : meeting.summary)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(.ncBody)
+                .foregroundStyle(Color.ncSecondary)
                 .lineLimit(2)
 
-            HStack(spacing: 12) {
+            HStack(spacing: NCSpacing.md) {
                 Label("\(meeting.actionItems.count)", systemImage: "checklist")
                 Label(formatDuration(meeting.duration), systemImage: "timer")
                 if let folderName = meeting.folder?.name {
                     Label(folderName, systemImage: "folder")
                 }
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
+            .font(.ncCaption1)
+            .foregroundStyle(Color.ncMuted)
 
             if !meeting.tags.isEmpty {
-                HStack(spacing: 6) {
+                HStack(spacing: NCSpacing.sm) {
                     ForEach(meeting.tags, id: \.self) { tag in
                         Text(tag)
-                            .font(.caption2.weight(.semibold))
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 4)
-                            .background(.green.opacity(0.16), in: RoundedRectangle(cornerRadius: 8))
+                            .font(.ncCaption2)
+                            .padding(.horizontal, NCSpacing.sm)
+                            .padding(.vertical, NCSpacing.xs)
+                            .background(Color.ncPurple.opacity(0.16), in: RoundedRectangle(cornerRadius: NCRadius.small))
                     }
                 }
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, NCSpacing.sm)
     }
 
     private func formatDuration(_ duration: TimeInterval) -> String {

@@ -4,6 +4,7 @@ import OSLog
 #if canImport(FoundationModels)
 import FoundationModels
 
+@available(iOS 26.0, *)
 @Generable
 struct FMInsightOutput {
     @Guide(description: "Three to five sentence summary of the meeting in plain prose.")
@@ -28,6 +29,7 @@ struct FMInsightOutput {
     var actionItems: [FMActionItemOutput]
 }
 
+@available(iOS 26.0, *)
 @Generable
 struct FMActionItemOutput {
     @Guide(description: "Short imperative title, under 80 characters.")
@@ -46,6 +48,7 @@ struct FMActionItemOutput {
     var priority: String
 }
 
+@available(iOS 26.0, *)
 @Generable
 struct FMAnswerOutput {
     @Guide(description: "Direct answer to the user's question in 2 to 4 sentences, spoken-friendly.")
@@ -69,6 +72,7 @@ final class FoundationModelClient {
 
     var isAvailable: Bool {
         #if canImport(FoundationModels)
+        guard #available(iOS 26.0, *) else { return false }
         switch SystemLanguageModel.default.availability {
         case .available: return true
         case .unavailable: return false
@@ -88,6 +92,7 @@ final class FoundationModelClient {
     #if canImport(FoundationModels)
     // MARK: - LRU Session Cache
 
+    @available(iOS 26.0, *)
     private struct SessionCache {
         private var order: [String] = []
         private var store: [String: FMInsightOutput] = [:]
@@ -119,8 +124,19 @@ final class FoundationModelClient {
         }
     }
 
-    private var cache = SessionCache()
     private let cacheQueue = DispatchQueue(label: "works.kaspar.notecrux.fm.cache")
+    private var _cache: Any?
+
+    @available(iOS 26.0, *)
+    private var cache: SessionCache {
+        get {
+            if let existing = _cache as? SessionCache { return existing }
+            let new = SessionCache()
+            _cache = new
+            return new
+        }
+        set { _cache = newValue }
+    }
     #endif
 
     private init() {}
@@ -128,6 +144,7 @@ final class FoundationModelClient {
     #if canImport(FoundationModels)
     // MARK: - generateInsights (cached, map-reduce)
 
+    @available(iOS 26.0, *)
     func generateInsights(from transcript: String) async throws -> FMInsightOutput {
         try Task.checkCancellation()
         let key = Self.cacheKey(for: transcript)
@@ -142,6 +159,7 @@ final class FoundationModelClient {
         return output
     }
 
+    @available(iOS 26.0, *)
     private func generateInsightsUncached(from transcript: String) async throws -> FMInsightOutput {
         try Task.checkCancellation()
         guard isAvailable else { throw ClientError.unavailable }
@@ -189,6 +207,7 @@ final class FoundationModelClient {
 
     // MARK: - Single-shot call
 
+    @available(iOS 26.0, *)
     private func singleShotInsight(_ transcript: String) async throws -> FMInsightOutput {
         try Task.checkCancellation()
         let session = LanguageModelSession()
@@ -222,6 +241,7 @@ final class FoundationModelClient {
 
     // MARK: - answer
 
+    @available(iOS 26.0, *)
     func answer(question: String, context: [MeetingContext]) async throws -> FMAnswerOutput {
         guard isAvailable else { throw ClientError.unavailable }
 
@@ -294,6 +314,7 @@ final class FoundationModelClient {
         return "\(normalized.count):\(normalized.hashValue)"
     }
 
+    @available(iOS 26.0, *)
     static func dedupeActionItems(_ items: [FMActionItemOutput]) -> [FMActionItemOutput] {
         var seenNormalized: [String] = []
         var out: [FMActionItemOutput] = []
@@ -329,6 +350,7 @@ final class FoundationModelClient {
     // MARK: - Cache management
 
     func purgeSessionCache() {
+        guard #available(iOS 26.0, *) else { return }
         cacheQueue.sync { cache.purge() }
         NoteCruxLog.ai.debug("FM session cache purged")
     }

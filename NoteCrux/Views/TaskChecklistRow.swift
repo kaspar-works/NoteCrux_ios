@@ -9,8 +9,8 @@ struct TaskChecklistRow: View {
     @State private var hasReminder = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 10) {
+        VStack(alignment: .leading, spacing: NCSpacing.md) {
+            HStack(alignment: .top, spacing: NCSpacing.sm + 2) {
                 Button {
                     item.isComplete.toggle()
                     if item.isComplete {
@@ -20,33 +20,33 @@ struct TaskChecklistRow: View {
                     save()
                 } label: {
                     Image(systemName: item.isComplete ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .foregroundStyle(item.isComplete ? .green : .secondary)
+                        .font(.ncTitle3)
+                        .foregroundStyle(item.isComplete ? Color.ncSuccess : Color.ncSecondary)
                 }
                 .buttonStyle(.plain)
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: NCSpacing.sm) {
                     TextField("Task title", text: $item.title, axis: .vertical)
-                        .font(.headline)
+                        .font(.ncHeadline)
                         .strikethrough(item.isComplete)
                         .onSubmit { save() }
 
                     TextField("Owner", text: $item.owner)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.ncCaption1)
+                        .foregroundStyle(Color.ncSecondary)
                         .onSubmit { save() }
 
                     if showsMeetingTitle, let title = item.meeting?.title {
                         Text(title)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.ncCaption1)
+                            .foregroundStyle(Color.ncSecondary)
                     }
                 }
             }
 
             TextField("Details", text: $item.detail, axis: .vertical)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .font(.ncCallout)
+                .foregroundStyle(Color.ncSecondary)
                 .onSubmit { save() }
 
             HStack {
@@ -60,7 +60,7 @@ struct TaskChecklistRow: View {
             }
 
             Toggle("Reminder", isOn: $hasReminder)
-                .font(.subheadline)
+                .font(.ncCallout)
                 .onChange(of: hasReminder) { _, enabled in
                     if enabled {
                         item.reminderDate = item.reminderDate ?? item.deadline ?? TaskReminderScheduler.snoozeDate(minutes: 60)
@@ -85,14 +85,14 @@ struct TaskChecklistRow: View {
                     ),
                     displayedComponents: [.date, .hourAndMinute]
                 )
-                .font(.subheadline)
+                .font(.ncCallout)
 
                 HStack {
                     Button("Schedule") {
                         Task { await scheduleReminder() }
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.green)
+                    .tint(Color.ncSuccess)
 
                     Button("Snooze 1h") {
                         item.reminderDate = TaskReminderScheduler.snoozeDate(minutes: 60)
@@ -109,15 +109,15 @@ struct TaskChecklistRow: View {
 
                 if let deadline = item.deadline {
                     Label(deadline.formatted(date: .abbreviated, time: .shortened), systemImage: "calendar")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.ncCaption1)
+                        .foregroundStyle(Color.ncSecondary)
                 }
 
                 Spacer()
             }
         }
-        .padding(12)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .padding(NCSpacing.md)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.small))
         .onAppear {
             hasReminder = item.reminderDate != nil || item.deadline != nil
         }
@@ -142,21 +142,21 @@ struct PriorityBadge: View {
 
     var body: some View {
         Text(priority.rawValue)
-            .font(.caption.weight(.bold))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .font(.ncCaption1.bold())
+            .padding(.horizontal, NCSpacing.sm)
+            .padding(.vertical, NCSpacing.xs)
             .foregroundStyle(priority == .high ? .black : .primary)
-            .background(color.opacity(priority == .high ? 1 : 0.18), in: RoundedRectangle(cornerRadius: 8))
+            .background(color.opacity(priority == .high ? 1 : 0.18), in: RoundedRectangle(cornerRadius: NCRadius.small))
     }
 
     private var color: Color {
         switch priority {
         case .high:
-            return .yellow
+            return Color.ncWarning
         case .medium:
-            return .green
+            return Color.ncSuccess
         case .low:
-            return .gray
+            return Color.ncMuted
         }
     }
 }

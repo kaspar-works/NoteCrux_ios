@@ -31,22 +31,23 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.profileBackground
+                Color.ncBackground
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
+                    VStack(spacing: NCSpacing.xxl) {
                         ProfileTopBar()
 
                         ProfileIdentity()
 
-                        VStack(alignment: .leading, spacing: 11) {
-                            ProfileSectionTitle("SECURITY & PRIVACY")
+                        VStack(alignment: .leading, spacing: NCSpacing.md) {
+                            NCSectionHeader(title: "SECURITY & PRIVACY")
+                                .padding(.horizontal, NCSpacing.md)
 
                             ProfileCard {
                                 ProfileToggleRow(
                                     icon: "faceid",
-                                    iconColor: .profilePurple,
+                                    iconColor: .ncPurple,
                                     title: "App Lock",
                                     subtitle: "Use Face ID to secure NoteCrux",
                                     isOn: $appLockEnabled
@@ -54,8 +55,9 @@ struct SettingsView: View {
                             }
                         }
 
-                        VStack(alignment: .leading, spacing: 11) {
-                            ProfileSectionTitle("APPEARANCE")
+                        VStack(alignment: .leading, spacing: NCSpacing.md) {
+                            NCSectionHeader(title: "APPEARANCE")
+                                .padding(.horizontal, NCSpacing.md)
 
                             ProfileCard(spacing: 0) {
                                 NavigationLink {
@@ -63,7 +65,7 @@ struct SettingsView: View {
                                 } label: {
                                     ProfileDisclosureRow(
                                         icon: "paintpalette.fill",
-                                        iconColor: .profilePurple,
+                                        iconColor: .ncPurple,
                                         title: "Theme",
                                         value: themeMode
                                     )
@@ -86,8 +88,9 @@ struct SettingsView: View {
                             }
                         }
 
-                        VStack(alignment: .leading, spacing: 11) {
-                            ProfileSectionTitle("DATA MANAGEMENT")
+                        VStack(alignment: .leading, spacing: NCSpacing.md) {
+                            NCSectionHeader(title: "DATA MANAGEMENT")
+                                .padding(.horizontal, NCSpacing.md)
 
                             ProfileCard(spacing: 0) {
                                 Button {
@@ -95,7 +98,7 @@ struct SettingsView: View {
                                 } label: {
                                     ProfileDisclosureRow(
                                         icon: "doc.text.fill",
-                                        iconColor: Color(red: 0.33, green: 0.35, blue: 0.40),
+                                        iconColor: Color.ncMuted,
                                         title: backupURL == nil ? "Export JSON" : "Export Ready",
                                         value: nil
                                     )
@@ -108,7 +111,7 @@ struct SettingsView: View {
                                     ShareLink(item: backupURL) {
                                         ProfileDisclosureRow(
                                             icon: "square.and.arrow.up.fill",
-                                            iconColor: .profilePurple,
+                                            iconColor: .ncPurple,
                                             title: "Share Backup",
                                             value: nil
                                         )
@@ -127,8 +130,9 @@ struct SettingsView: View {
                             }
                         }
 
-                        VStack(alignment: .leading, spacing: 11) {
-                            ProfileSectionTitle("BULK EXPORT")
+                        VStack(alignment: .leading, spacing: NCSpacing.md) {
+                            NCSectionHeader(title: "BULK EXPORT")
+                                .padding(.horizontal, NCSpacing.md)
 
                             ProfileCard(spacing: 0) {
                                 Button {
@@ -150,8 +154,8 @@ struct SettingsView: View {
                                         )
 
                                         Text(isExporting ? "Preparing archive…" : "Export all meetings")
-                                            .font(.system(size: 15, weight: .bold))
-                                            .foregroundStyle(Color.profileInk)
+                                            .font(.ncHeadline)
+                                            .foregroundStyle(Color.ncInk)
 
                                         Spacer()
 
@@ -159,11 +163,11 @@ struct SettingsView: View {
                                             ProgressView()
                                         } else {
                                             Image(systemName: "chevron.right")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .foregroundStyle(Color.profileMuted.opacity(0.75))
+                                                .font(.ncCaption2)
+                                                .foregroundStyle(Color.ncMuted.opacity(0.75))
                                         }
                                     }
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, NCSpacing.lg)
                                     .padding(.vertical, 15)
                                     .contentShape(Rectangle())
                                 }
@@ -173,34 +177,34 @@ struct SettingsView: View {
 
                             Text("Creates a zip of markdown files. Audio files are available via the per-meeting share button.")
                                 .font(.caption)
-                                .foregroundStyle(Color.profileMuted)
-                                .padding(.horizontal, 12)
+                                .foregroundStyle(Color.ncMuted)
+                                .padding(.horizontal, NCSpacing.md)
                         }
 
                         PrivacyGuaranteeCard()
 
                         if let statusMessage {
                             Text(statusMessage)
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(Color.profileMuted)
+                                .font(.ncFootnote.bold())
+                                .foregroundStyle(Color.ncMuted)
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, NCSpacing.xl)
                         }
 
-                        VStack(spacing: 4) {
+                        VStack(spacing: NCSpacing.xs) {
                             Text("VERSION 2.1 STABLE")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.ncOverline)
                                 .tracking(1.6)
-                                .foregroundStyle(Color.profileMuted)
+                                .foregroundStyle(Color.ncMuted)
 
                             Text("© 2024 NoteCrux AI Lab")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(Color.profileMuted.opacity(0.72))
+                                .font(.ncOverline)
+                                .foregroundStyle(Color.ncMuted.opacity(0.72))
                         }
                         .padding(.top, -2)
                     }
                     .padding(.horizontal, 18)
-                    .padding(.top, 16)
+                    .padding(.top, NCSpacing.lg)
                     .padding(.bottom, 92)
                 }
             }
@@ -278,32 +282,26 @@ struct SettingsView: View {
 
 private struct ProfileTopBar: View {
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: NCSpacing.md) {
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(red: 0.04, green: 0.42, blue: 0.43), Color(red: 0.97, green: 0.72, blue: 0.45)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(NoteCruxTheme.brandGradient)
 
                 Image(systemName: "waveform")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.ncFootnote.bold())
                     .foregroundStyle(.white)
             }
             .frame(width: 34, height: 34)
 
             Text("NoteCrux")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(Color.profileInk)
+                .font(.ncTitle3)
+                .foregroundStyle(Color.ncInk)
 
             Spacer()
 
             Image(systemName: "gearshape.fill")
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(Color.profilePurple)
+                .font(.ncTitle2)
+                .foregroundStyle(Color.ncPurple)
                 .frame(width: 34, height: 34)
         }
     }
@@ -316,12 +314,12 @@ private struct ProfileIdentity: View {
                 AvatarPortrait()
                     .frame(width: 102, height: 102)
                     .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.profilePurple, lineWidth: 4))
-                    .shadow(color: Color.profilePurple.opacity(0.18), radius: 14, y: 7)
+                    .overlay(Circle().stroke(Color.ncPurple, lineWidth: 4))
+                    .shadow(color: Color.ncPurple.opacity(0.18), radius: 14, y: 7)
 
                 ZStack {
                     Circle()
-                        .fill(Color.profilePurple)
+                        .fill(Color.ncPurple)
                     Circle()
                         .fill(.white)
                         .frame(width: 9, height: 9)
@@ -331,16 +329,16 @@ private struct ProfileIdentity: View {
             }
 
             Text("Alex Thompson")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundStyle(Color.profileInk)
+                .font(.ncTitle1)
+                .foregroundStyle(Color.ncInk)
 
             Label("LOCAL ONLY", systemImage: "lock.fill")
-                .font(.system(size: 10, weight: .bold))
+                .font(.ncCaption2)
                 .tracking(1.1)
-                .foregroundStyle(Color.profilePurple)
+                .foregroundStyle(Color.ncPurple)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(Color.profilePurple.opacity(0.09), in: Capsule())
+                .background(Color.ncPurple.opacity(0.09), in: Capsule())
         }
         .padding(.top, 2)
     }
@@ -386,24 +384,8 @@ private struct AvatarPortrait: View {
     }
 }
 
-private struct ProfileSectionTitle: View {
-    let title: String
-
-    init(_ title: String) {
-        self.title = title
-    }
-
-    var body: some View {
-        Text(title)
-            .font(.system(size: 10, weight: .bold))
-            .tracking(1.6)
-            .foregroundStyle(Color.profileMuted)
-            .padding(.horizontal, 12)
-    }
-}
-
 private struct ProfileCard<Content: View>: View {
-    var spacing: CGFloat = 12
+    var spacing: CGFloat = NCSpacing.md
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -411,8 +393,8 @@ private struct ProfileCard<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity)
-        .background(Color.profileSurface, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-        .shadow(color: .black.opacity(0.025), radius: 14, y: 7)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.card)
     }
 }
 
@@ -429,21 +411,21 @@ private struct ProfileToggleRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Color.profileInk)
+                    .font(.ncHeadline)
+                    .foregroundStyle(Color.ncInk)
 
                 Text(subtitle)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.profileMuted)
+                    .font(.ncCaption1.bold())
+                    .foregroundStyle(Color.ncMuted)
             }
 
             Spacer()
 
             Toggle("", isOn: $isOn)
                 .labelsHidden()
-                .tint(Color.profilePurple)
+                .tint(Color.ncPurple)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, NCSpacing.lg)
         .padding(.vertical, 13)
     }
 }
@@ -459,22 +441,22 @@ private struct ProfileDisclosureRow: View {
             ProfileIcon(icon: icon, color: iconColor)
 
             Text(title)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Color.profileInk)
+                .font(.ncHeadline)
+                .foregroundStyle(Color.ncInk)
 
             Spacer()
 
             if let value {
                 Text(value)
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Color.profileMuted)
+                    .font(.ncCaption1.bold())
+                    .foregroundStyle(Color.ncMuted)
             }
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color.profileMuted.opacity(0.75))
+                .font(.ncCaption2)
+                .foregroundStyle(Color.ncMuted.opacity(0.75))
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, NCSpacing.lg)
         .padding(.vertical, 15)
         .contentShape(Rectangle())
     }
@@ -483,19 +465,19 @@ private struct ProfileDisclosureRow: View {
 private struct ProfileDangerRow: View {
     var body: some View {
         HStack(spacing: 14) {
-            ProfileIcon(icon: "trash.fill", color: Color(red: 0.86, green: 0.18, blue: 0.18))
+            ProfileIcon(icon: "trash.fill", color: Color.ncDanger)
 
             Text("Delete Account")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Color(red: 0.79, green: 0.12, blue: 0.13))
+                .font(.ncHeadline)
+                .foregroundStyle(Color.ncDanger)
 
             Spacer()
 
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color(red: 0.79, green: 0.12, blue: 0.13).opacity(0.5))
+                .font(.ncCaption2)
+                .foregroundStyle(Color.ncDanger.opacity(0.5))
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, NCSpacing.lg)
         .padding(.vertical, 15)
         .contentShape(Rectangle())
     }
@@ -517,7 +499,7 @@ private struct ProfileIcon: View {
 private struct ProfileDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color.profileBackground)
+            .fill(Color.ncBackground)
             .frame(height: 1)
             .padding(.leading, 65)
     }
@@ -527,28 +509,28 @@ private struct PrivacyGuaranteeCard: View {
     var body: some View {
         VStack(spacing: 13) {
             Image(systemName: "sparkles")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(Color.profilePurple)
+                .font(.ncTitle3)
+                .foregroundStyle(Color.ncPurple)
 
             Text("Privacy Guarantee")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Color.profileInk)
+                .font(.ncHeadline)
+                .foregroundStyle(Color.ncInk)
 
             Text("NoteCrux is local-first encryption. Your financial data never leaves this device without your permission.")
-                .font(.system(size: 12, weight: .medium))
+                .font(.ncFootnote)
                 .lineSpacing(3)
                 .multilineTextAlignment(.center)
-                .foregroundStyle(Color.profileMuted)
-                .padding(.horizontal, 20)
+                .foregroundStyle(Color.ncMuted)
+                .padding(.horizontal, NCSpacing.xl)
 
             Text("Read Privacy Policy")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Color.profilePurple)
-                .padding(.top, 4)
+                .font(.ncFootnote.bold())
+                .foregroundStyle(Color.ncPurple)
+                .padding(.top, NCSpacing.xs)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 30)
-        .background(Color.profilePurple.opacity(0.055), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .background(Color.ncPurple.opacity(0.055), in: RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous))
     }
 }
 
@@ -593,12 +575,4 @@ private struct LanguageProfileSettings: View {
 private struct BulkExportWrapper: Identifiable {
     let id = UUID()
     let url: URL
-}
-
-private extension Color {
-    static let profileBackground = Color.adaptive(light: (0.978, 0.976, 0.984), dark: (0.055, 0.056, 0.072))
-    static let profileSurface = Color.adaptive(light: (1.0, 1.0, 1.0), dark: (0.105, 0.108, 0.135))
-    static let profileInk = Color.adaptive(light: (0.14, 0.14, 0.16), dark: (0.93, 0.94, 0.97))
-    static let profileMuted = Color.adaptive(light: (0.57, 0.57, 0.64), dark: (0.62, 0.64, 0.72))
-    static let profilePurple = Color.adaptive(light: (0.25, 0.18, 0.86), dark: (0.58, 0.50, 1.0))
 }

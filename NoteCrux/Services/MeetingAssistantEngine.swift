@@ -28,36 +28,37 @@ struct MeetingAssistantEngine {
         }
 
         #if canImport(FoundationModels)
-        let context = ranked.map { meeting in
-            FoundationModelClient.MeetingContext(
-                title: meeting.title,
-                summary: meeting.summary,
-                createdAt: meeting.createdAt
-            )
-        }
-
-        do {
-            let fm = try await FoundationModelClient.shared.answer(question: question, context: context)
-            // Map cited titles back to Meetings; capped at 5 in the prompt.
-            let cited = fm.citedMeetingTitles.compactMap { title in
-                meetings.first(where: { $0.title == title })
+        if #available(iOS 26.0, *) {
+            let context = ranked.map { meeting in
+                FoundationModelClient.MeetingContext(
+                    title: meeting.title,
+                    summary: meeting.summary,
+                    createdAt: meeting.createdAt
+                )
             }
-            return AnswerResult(answer: fm.answer, citedMeetings: cited, usedFM: true)
-        } catch {
-            NoteCruxLog.ai.debug("MeetingAssistantEngine: FM failed, falling back to keyword")
-            return AnswerResult(
-                answer: keywordAnswer(question: question, meetings: meetings, tasks: tasks),
-                citedMeetings: Array(ranked),
-                usedFM: false
-            )
+
+            do {
+                let fm = try await FoundationModelClient.shared.answer(question: question, context: context)
+                // Map cited titles back to Meetings; capped at 5 in the prompt.
+                let cited = fm.citedMeetingTitles.compactMap { title in
+                    meetings.first(where: { $0.title == title })
+                }
+                return AnswerResult(answer: fm.answer, citedMeetings: cited, usedFM: true)
+            } catch {
+                NoteCruxLog.ai.debug("MeetingAssistantEngine: FM failed, falling back to keyword")
+                return AnswerResult(
+                    answer: keywordAnswer(question: question, meetings: meetings, tasks: tasks),
+                    citedMeetings: Array(ranked),
+                    usedFM: false
+                )
+            }
         }
-        #else
+        #endif
         return AnswerResult(
             answer: keywordAnswer(question: question, meetings: meetings, tasks: tasks),
             citedMeetings: Array(ranked),
             usedFM: false
         )
-        #endif
     }
 
     /// Simple keyword-score ranking for context selection. Independent of keywordAnswer output text.

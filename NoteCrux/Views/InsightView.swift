@@ -53,11 +53,11 @@ struct InsightView: View {
 
     var body: some View {
         ZStack {
-            Color.detailBackground
+            Color.ncBackground
                 .ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: NCSpacing.xl) {
                     MeetingDetailTopBar(
                         back: { dismiss() },
                         refresh: {
@@ -66,20 +66,20 @@ struct InsightView: View {
                         isRegenerating: isRegenerating
                     )
 
-                    VStack(alignment: .leading, spacing: 9) {
+                    VStack(alignment: .leading, spacing: NCSpacing.sm) {
                         Text("\(meeting.createdAt.detailDate)  •  \(meeting.duration.detailDuration) DURATION")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.ncOverline)
                             .tracking(1.2)
-                            .foregroundStyle(Color.detailPurple)
+                            .foregroundStyle(Color.ncPurple)
 
                         TextField("Meeting title", text: $meeting.title, axis: .vertical)
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundStyle(Color.detailInk)
+                            .font(.ncLargeTitle)
+                            .foregroundStyle(Color.ncInk)
                             .textInputAutocapitalization(.words)
                             .lineLimit(3)
                             .onSubmit { save() }
 
-                        HStack(spacing: 5) {
+                        HStack(spacing: NCSpacing.xs) {
                             ParticipantBubble(label: "👨‍💻")
                             ParticipantBubble(label: "🎨")
                             ParticipantBubble(label: "+\(max(1, meeting.tags.count + 1))")
@@ -97,8 +97,8 @@ struct InsightView: View {
 
                     RelatedMeetingsCard(meetings: smartInsights.relatedMeetings)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 14)
+                .padding(.horizontal, NCSpacing.lg)
+                .padding(.top, NCSpacing.lg)
                 .padding(.bottom, 94)
             }
         }
@@ -196,13 +196,15 @@ struct InsightView: View {
     }
 }
 
+// MARK: - MeetingDetailTopBar
+
 private struct MeetingDetailTopBar: View {
     let back: () -> Void
     let refresh: () -> Void
     let isRegenerating: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: NCSpacing.sm) {
             ZStack {
                 Circle()
                     .fill(
@@ -213,14 +215,14 @@ private struct MeetingDetailTopBar: View {
                         )
                     )
                 Image(systemName: "waveform")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.ncOverline)
                     .foregroundStyle(.white)
             }
             .frame(width: 20, height: 20)
 
             Text("NoteCrux")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Color.detailInk)
+                .font(.ncFootnote.bold())
+                .foregroundStyle(Color.ncInk)
 
             Spacer()
 
@@ -230,8 +232,8 @@ private struct MeetingDetailTopBar: View {
                         .scaleEffect(0.7)
                 } else {
                     Image(systemName: "gearshape.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color.detailMuted)
+                        .font(.ncCallout.bold())
+                        .foregroundStyle(Color.ncMuted)
                 }
             }
             .buttonStyle(.plain)
@@ -240,8 +242,8 @@ private struct MeetingDetailTopBar: View {
         .overlay(alignment: .leading) {
             Button(action: back) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Color.detailMuted)
+                    .font(.ncFootnote.bold())
+                    .foregroundStyle(Color.ncMuted)
                     .frame(width: 34, height: 34)
                     .contentShape(Rectangle())
             }
@@ -252,35 +254,39 @@ private struct MeetingDetailTopBar: View {
     }
 }
 
+// MARK: - ParticipantBubble
+
 private struct ParticipantBubble: View {
     let label: String
 
     var body: some View {
         Text(label)
-            .font(.system(size: label.hasPrefix("+") ? 10 : 14, weight: .bold))
+            .font(label.hasPrefix("+") ? .ncCaption2.weight(.semibold) : .ncCallout.bold())
             .frame(width: 25, height: 25)
-            .background(Color.detailPurple.opacity(0.10), in: Circle())
-            .foregroundStyle(Color.detailPurple)
+            .background(Color.ncPurple.opacity(0.10), in: Circle())
+            .foregroundStyle(Color.ncPurple)
     }
 }
+
+// MARK: - DetailTabBar
 
 private struct DetailTabBar: View {
     @Binding var selection: DetailTab
 
     var body: some View {
-        HStack(spacing: 21) {
+        HStack(spacing: NCSpacing.xl) {
             ForEach(DetailTab.allCases) { tab in
                 Button {
                     selection = tab
                 } label: {
                     Text(tab.rawValue)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(selection == tab ? Color.detailPurple : Color.detailInk)
-                        .padding(.vertical, 8)
+                        .font(.ncFootnote.bold())
+                        .foregroundStyle(selection == tab ? Color.ncPurple : Color.ncInk)
+                        .padding(.vertical, NCSpacing.sm)
                         .overlay(alignment: .bottom) {
                             if selection == tab {
                                 Capsule()
-                                    .fill(Color.detailPurple)
+                                    .fill(Color.ncPurple)
                                     .frame(height: 3)
                             }
                         }
@@ -288,8 +294,11 @@ private struct DetailTabBar: View {
                 .buttonStyle(.plain)
             }
         }
+        .animation(.ncSpring, value: selection)
     }
 }
+
+// MARK: - NotesDetailContent
 
 private struct NotesDetailContent: View {
     let summary: String
@@ -298,48 +307,47 @@ private struct NotesDetailContent: View {
     let criticalInsight: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            DetailCard {
-                VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: NCSpacing.xxl) {
+            NCCard {
+                VStack(alignment: .leading, spacing: NCSpacing.lg) {
                     Label("Executive Summary", systemImage: "sparkles")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color.detailInk)
+                        .font(.ncCallout.bold())
+                        .foregroundStyle(Color.ncInk)
 
                     Text(summary)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.ncCallout.weight(.medium))
                         .lineSpacing(5)
-                        .foregroundStyle(Color.detailMuted)
+                        .foregroundStyle(Color.ncMuted)
                         .lineLimit(7)
 
                     Text("KEY TAKEAWAYS")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.ncOverline)
                         .tracking(1.0)
-                        .foregroundStyle(Color.detailPurple)
+                        .foregroundStyle(Color.ncPurple)
 
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: NCSpacing.md) {
                         ForEach(takeaways, id: \.self) { takeaway in
-                            HStack(alignment: .top, spacing: 9) {
+                            HStack(alignment: .top, spacing: NCSpacing.sm) {
                                 Circle()
-                                    .fill(Color.detailPurple)
+                                    .fill(Color.ncPurple)
                                     .frame(width: 4, height: 4)
                                     .padding(.top, 7)
                                 Text(takeaway)
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(.ncCallout.weight(.medium))
                                     .lineSpacing(3)
-                                    .foregroundStyle(Color.detailInk)
+                                    .foregroundStyle(Color.ncInk)
                             }
                         }
                     }
                 }
-                .padding(18)
             }
 
-            VStack(alignment: .leading, spacing: 13) {
+            VStack(alignment: .leading, spacing: NCSpacing.md) {
                 Text("Roadmap Milestones")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Color.detailInk)
+                    .font(.ncTitle3)
+                    .foregroundStyle(Color.ncInk)
 
-                DetailCard(spacing: 0) {
+                NCCard(padding: 0) {
                     ForEach(Array(milestones.enumerated()), id: \.offset) { index, item in
                         RoadmapRow(
                             title: item,
@@ -355,44 +363,46 @@ private struct NotesDetailContent: View {
     }
 }
 
+// MARK: - TranscriptDetailCard
+
 private struct TranscriptDetailCard: View {
     @Binding var transcript: String
     let save: () -> Void
 
     var body: some View {
-        DetailCard {
-            VStack(alignment: .leading, spacing: 12) {
+        NCCard {
+            VStack(alignment: .leading, spacing: NCSpacing.md) {
                 Label("Transcript", systemImage: "text.quote")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.detailInk)
+                    .font(.ncCallout.bold())
+                    .foregroundStyle(Color.ncInk)
 
                 TextEditor(text: $transcript)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.detailInk)
+                    .font(.ncCallout)
+                    .foregroundStyle(Color.ncInk)
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: 280)
                     .onChange(of: transcript) { _, _ in save() }
             }
-            .padding(18)
         }
     }
 }
+
+// MARK: - TasksDetailContent
 
 private struct TasksDetailContent: View {
     let items: [MeetingActionItem]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: NCSpacing.lg) {
             Text("Action Items")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(Color.detailInk)
+                .font(.ncTitle3)
+                .foregroundStyle(Color.ncInk)
 
             if items.isEmpty {
-                DetailCard {
+                NCCard {
                     Text("No tasks extracted yet.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.detailMuted)
-                        .padding(18)
+                        .font(.ncCallout.weight(.medium))
+                        .foregroundStyle(Color.ncMuted)
                 }
             } else {
                 ForEach(items) { item in
@@ -403,40 +413,42 @@ private struct TasksDetailContent: View {
     }
 }
 
+// MARK: - HighlightsDetailContent
+
 private struct HighlightsDetailContent: View {
     let items: [String]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: NCSpacing.lg) {
             Text("Highlights")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(Color.detailInk)
+                .font(.ncTitle3)
+                .foregroundStyle(Color.ncInk)
 
             if items.isEmpty {
-                DetailCard {
+                NCCard {
                     Text("No highlights generated yet.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.detailMuted)
-                        .padding(18)
+                        .font(.ncCallout.weight(.medium))
+                        .foregroundStyle(Color.ncMuted)
                 }
             } else {
                 ForEach(items, id: \.self) { item in
-                    DetailCard {
-                        HStack(alignment: .top, spacing: 10) {
+                    NCCard {
+                        HStack(alignment: .top, spacing: NCSpacing.sm) {
                             Image(systemName: "sparkles")
-                                .foregroundStyle(Color.detailPurple)
+                                .foregroundStyle(Color.ncPurple)
                             Text(item)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.ncCallout.weight(.medium))
                                 .lineSpacing(4)
-                                .foregroundStyle(Color.detailInk)
+                                .foregroundStyle(Color.ncInk)
                         }
-                        .padding(18)
                     }
                 }
             }
         }
     }
 }
+
+// MARK: - RoadmapRow
 
 private struct RoadmapRow: View {
     let title: String
@@ -445,146 +457,154 @@ private struct RoadmapRow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: NCSpacing.md) {
+                VStack(alignment: .leading, spacing: NCSpacing.xs) {
                     Text(title)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color.detailInk)
+                        .font(.ncCallout.bold())
+                        .foregroundStyle(Color.ncInk)
                         .lineLimit(2)
 
                     Text(subtitle)
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color.detailMuted)
+                        .font(.ncCaption2.weight(.semibold))
+                        .foregroundStyle(Color.ncMuted)
                         .lineLimit(2)
                 }
 
                 Spacer()
 
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Color.detailMuted)
+                    .font(.ncCaption1.bold())
+                    .foregroundStyle(Color.ncMuted)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 14)
+            .padding(.horizontal, NCSpacing.lg)
+            .padding(.vertical, NCSpacing.lg)
 
             if showsDivider {
                 Rectangle()
-                    .fill(Color.detailBackground)
+                    .fill(Color.ncDivider)
                     .frame(height: 1)
-                    .padding(.leading, 14)
+                    .padding(.leading, NCSpacing.lg)
             }
         }
     }
 }
 
+// MARK: - CriticalInsightCard
+
 private struct CriticalInsightCard: View {
     let text: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 17) {
+        VStack(alignment: .leading, spacing: NCSpacing.lg) {
             Label("Critical Insight", systemImage: "diamond.fill")
-                .font(.system(size: 11, weight: .bold))
+                .font(.ncCaption1.bold())
                 .foregroundStyle(.white)
 
-            Text("“\(text)”")
-                .font(.system(size: 17, weight: .bold))
+            Text("\u{201C}\(text)\u{201D}")
+                .font(.ncTitle3)
                 .lineSpacing(4)
                 .foregroundStyle(.white)
                 .lineLimit(5)
 
-            HStack(spacing: 9) {
+            HStack(spacing: NCSpacing.sm) {
                 ParticipantBubble(label: "👤")
                     .background(.clear)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Alex Johnson")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.ncCaption1.bold())
                     Text("Design Lead")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.ncCaption2.weight(.medium))
                         .opacity(0.76)
                 }
                 .foregroundStyle(.white)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(22)
-        .background(Color.detailPurple, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .shadow(color: Color.detailPurple.opacity(0.22), radius: 18, y: 9)
+        .padding(NCSpacing.xxl)
+        .background(Color.ncPurple, in: RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous))
+        .shadow(color: Color.ncPurple.opacity(0.22), radius: 18, y: 9)
     }
 }
+
+// MARK: - BottomMetrics
 
 private struct BottomMetrics: View {
     let actionCount: Int
     let score: Int
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: NCSpacing.lg) {
             MetricBox(title: "ACTION ITEMS", value: "\(actionCount)")
-            MetricBox(title: "SENTIMENT", value: "\(min(100, max(0, score)))%", valueColor: Color(red: 0.10, green: 0.68, blue: 0.34))
+            MetricBox(title: "SENTIMENT", value: "\(min(100, max(0, score)))%", valueColor: Color.ncSuccess)
         }
     }
 }
+
+// MARK: - MetricBox
 
 private struct MetricBox: View {
     let title: String
     let value: String
-    var valueColor: Color = Color.detailInk
+    var valueColor: Color = Color.ncInk
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: NCSpacing.sm) {
             Text(title)
-                .font(.system(size: 9, weight: .bold))
+                .font(.ncOverline)
                 .tracking(1.0)
-                .foregroundStyle(Color.detailMuted)
+                .foregroundStyle(Color.ncMuted)
 
             Text(value)
-                .font(.system(size: 22, weight: .bold))
+                .font(.ncTitle2.weight(.bold))
                 .foregroundStyle(valueColor)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(15)
-        .background(Color.detailSurface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .shadow(color: .black.opacity(0.025), radius: 12, y: 6)
+        .padding(NCSpacing.lg)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous))
+        .ncShadow(.card)
     }
 }
+
+// MARK: - RelatedMeetingsCard
 
 private struct RelatedMeetingsCard: View {
     let meetings: [Meeting]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 11) {
+        VStack(alignment: .leading, spacing: NCSpacing.md) {
             Text("RELATED MEETINGS")
-                .font(.system(size: 10, weight: .bold))
+                .font(.ncCaption2.weight(.semibold))
                 .tracking(1.2)
-                .foregroundStyle(Color.detailMuted)
+                .foregroundStyle(Color.ncMuted)
 
-            DetailCard(spacing: 0) {
+            NCCard(padding: 0) {
                 if meetings.isEmpty {
                     Text("No related meetings found yet.")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.detailMuted)
+                        .font(.ncFootnote.weight(.medium))
+                        .foregroundStyle(Color.ncMuted)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(14)
+                        .padding(NCSpacing.lg)
                 } else {
                     ForEach(Array(meetings.prefix(2).enumerated()), id: \.element.id) { index, meeting in
                         VStack(spacing: 0) {
                             HStack {
-                                VStack(alignment: .leading, spacing: 4) {
+                                VStack(alignment: .leading, spacing: NCSpacing.xs) {
                                     Text(meeting.title)
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundStyle(Color.detailInk)
+                                        .font(.ncFootnote.bold())
+                                        .foregroundStyle(Color.ncInk)
                                     Text(meeting.createdAt.formatted(date: .abbreviated, time: .omitted))
-                                        .font(.system(size: 10, weight: .semibold))
-                                        .foregroundStyle(Color.detailMuted)
+                                        .font(.ncCaption2.weight(.semibold))
+                                        .foregroundStyle(Color.ncMuted)
                                 }
                                 Spacer()
                             }
-                            .padding(14)
+                            .padding(NCSpacing.lg)
 
                             if index == 0 && meetings.count > 1 {
                                 Rectangle()
-                                    .fill(Color.detailBackground)
+                                    .fill(Color.ncDivider)
                                     .frame(height: 1)
-                                    .padding(.leading, 14)
+                                    .padding(.leading, NCSpacing.lg)
                             }
                         }
                     }
@@ -594,19 +614,7 @@ private struct RelatedMeetingsCard: View {
     }
 }
 
-private struct DetailCard<Content: View>: View {
-    var spacing: CGFloat = 12
-    @ViewBuilder var content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: spacing) {
-            content
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.detailSurface, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .shadow(color: .black.opacity(0.025), radius: 12, y: 6)
-    }
-}
+// MARK: - Supporting Types
 
 private enum DetailTab: String, CaseIterable, Identifiable {
     case transcript = "Transcript"
@@ -622,6 +630,8 @@ private struct ShareItemsWrapper: Identifiable {
     let items: [Any]
 }
 
+// MARK: - Date / TimeInterval Extensions
+
 private extension Date {
     var detailDate: String {
         let formatter = DateFormatter()
@@ -636,12 +646,4 @@ private extension TimeInterval {
         let minutes = max(1, Int((self / 60).rounded()))
         return "\(minutes) MIN"
     }
-}
-
-private extension Color {
-    static let detailBackground = Color.adaptive(light: (0.982, 0.982, 0.988), dark: (0.055, 0.056, 0.072))
-    static let detailSurface = Color.adaptive(light: (1.0, 1.0, 1.0), dark: (0.105, 0.108, 0.135))
-    static let detailInk = Color.adaptive(light: (0.13, 0.13, 0.15), dark: (0.93, 0.94, 0.97))
-    static let detailMuted = Color.adaptive(light: (0.49, 0.49, 0.56), dark: (0.62, 0.64, 0.72))
-    static let detailPurple = Color.adaptive(light: (0.25, 0.18, 0.86), dark: (0.58, 0.50, 1.0))
 }

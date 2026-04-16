@@ -44,7 +44,11 @@ final class LocalInsightGenerator {
             }
 
             #if canImport(FoundationModels)
-            return await self.generateWithFoundationModels(from: clean)
+            if #available(iOS 26.0, *) {
+                return await self.generateWithFoundationModels(from: clean)
+            } else {
+                return self.generateHeuristicInsights(from: clean)
+            }
             #else
             return self.generateHeuristicInsights(from: clean)
             #endif
@@ -269,6 +273,7 @@ final class LocalInsightGenerator {
     }
 
     #if canImport(FoundationModels)
+    @available(iOS 26.0, *)
     private func generateWithFoundationModels(from transcript: String) async -> InsightDraft {
         let client = FoundationModelClient.shared
         do {
@@ -283,6 +288,7 @@ final class LocalInsightGenerator {
         }
     }
 
+    @available(iOS 26.0, *)
     private func convert(fm: FMInsightOutput, transcript: String) -> InsightDraft {
         let sentences = transcript
             .components(separatedBy: CharacterSet(charactersIn: ".?!\n"))

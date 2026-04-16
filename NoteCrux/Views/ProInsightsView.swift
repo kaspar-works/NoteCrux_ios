@@ -2,7 +2,6 @@ import SwiftData
 import SwiftUI
 
 struct ProInsightsView: View {
-    @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \Meeting.createdAt, order: .reverse) private var meetings: [Meeting]
     @Query private var tasks: [MeetingActionItem]
 
@@ -19,7 +18,7 @@ struct ProInsightsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: NCSpacing.xl) {
                     header
 
                     analyticsGrid
@@ -29,53 +28,55 @@ struct ProInsightsView: View {
                     }
 
                     ProSection(title: "AI Suggestions", icon: "lightbulb") {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: NCSpacing.md) {
                             ProBulletList(items: memory.suggestedNextSteps, emptyText: "No urgent next steps detected.")
                             ProBulletList(items: memory.suggestedImprovements, emptyText: "No meeting improvements detected.")
                         }
                     }
 
                     ProSection(title: "Recurring Patterns", icon: "repeat") {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: NCSpacing.md) {
                             ProBulletList(items: memory.recurringDecisions, emptyText: "No repeated decision patterns yet.")
                             ProBulletList(items: memory.recurringRisks, emptyText: "No repeated risk patterns yet.")
                         }
                     }
 
                     ProSection(title: "Meeting Scores", icon: "target") {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: NCSpacing.md) {
                             ForEach(meetings.prefix(8)) { meeting in
                                 MeetingScoreRow(meeting: meeting, score: engine.meetingUsefulness(meeting))
                             }
                         }
                     }
                 }
-                .padding(20)
+                .padding(NCSpacing.xl)
             }
-            .background(NoteCruxTheme.background(for: colorScheme))
+            .background(Color.ncBackground)
             .navigationTitle("Pro")
         }
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: NCSpacing.sm) {
             Text("Knowledge Memory")
-                .font(.largeTitle.bold())
+                .font(.ncLargeTitle)
+                .foregroundStyle(Color.ncInk)
             Text("A private readout of what your meetings are teaching you.")
-                .foregroundStyle(.secondary)
+                .font(.ncCallout)
+                .foregroundStyle(Color.ncSecondary)
         }
     }
 
     private var analyticsGrid: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                MetricTile(value: analytics.formattedMeetingTime, label: "Meeting Time", icon: "clock")
-                MetricTile(value: "\(analytics.productivityScore)", label: "Productivity", icon: "chart.bar")
+        VStack(spacing: NCSpacing.md) {
+            HStack(spacing: NCSpacing.md) {
+                NCMetricCard(title: "MEETING TIME", value: analytics.formattedMeetingTime, icon: "clock", isPrimary: true)
+                NCMetricCard(title: "PRODUCTIVITY", value: "\(analytics.productivityScore)", icon: "chart.bar")
             }
 
-            HStack(spacing: 12) {
-                MetricTile(value: percent(analytics.taskCompletionRate), label: "Tasks Done", icon: "checkmark.circle")
-                MetricTile(value: "\(analytics.actionableMeetingCount)", label: "Actionable", icon: "target")
+            HStack(spacing: NCSpacing.md) {
+                NCMetricCard(title: "TASKS DONE", value: percent(analytics.taskCompletionRate), icon: "checkmark.circle")
+                NCMetricCard(title: "ACTIONABLE", value: "\(analytics.actionableMeetingCount)", icon: "target")
             }
         }
     }
@@ -91,11 +92,11 @@ private struct ProSection<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        PremiumCard {
-            VStack(alignment: .leading, spacing: 12) {
+        NCCard {
+            VStack(alignment: .leading, spacing: NCSpacing.md) {
                 Label(title, systemImage: icon)
-                    .font(.title3.bold())
-                    .foregroundStyle(.green)
+                    .font(.ncTitle3.bold())
+                    .foregroundStyle(Color.ncPurple)
                 content
             }
         }
@@ -107,20 +108,21 @@ private struct ProBulletList: View {
     let emptyText: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: NCSpacing.sm) {
             if items.isEmpty {
                 Text(emptyText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(.ncCallout)
+                    .foregroundStyle(Color.ncMuted)
             } else {
                 ForEach(items, id: \.self) { item in
-                    HStack(alignment: .top, spacing: 8) {
+                    HStack(alignment: .top, spacing: NCSpacing.sm) {
                         Image(systemName: "sparkle")
-                            .font(.caption)
-                            .foregroundStyle(.yellow)
+                            .font(.ncCaption1)
+                            .foregroundStyle(Color.ncWarning)
                             .padding(.top, 3)
                         Text(item)
-                            .font(.subheadline)
+                            .font(.ncCallout)
+                            .foregroundStyle(Color.ncInk)
                     }
                 }
             }
@@ -133,30 +135,31 @@ private struct MeetingScoreRow: View {
     let score: (score: Int, summary: String)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: NCSpacing.sm) {
             HStack {
                 Text(meeting.title)
-                    .font(.headline)
+                    .font(.ncHeadline)
+                    .foregroundStyle(Color.ncInk)
                 Spacer()
                 Text("\(score.score)")
-                    .font(.headline.monospacedDigit())
-                    .foregroundStyle(score.score >= 70 ? .green : .yellow)
+                    .font(.ncHeadline.monospacedDigit())
+                    .foregroundStyle(score.score >= 70 ? Color.ncSuccess : Color.ncWarning)
             }
 
             Text(score.summary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.ncCaption1)
+                .foregroundStyle(Color.ncSecondary)
 
-            HStack(spacing: 10) {
+            HStack(spacing: NCSpacing.sm + 2) {
                 Label("\(meeting.actionItems.count) tasks", systemImage: "checklist")
                 Label("\(meeting.decisions.count) decisions", systemImage: "checkmark.seal")
                 Label(formatDuration(meeting.duration), systemImage: "timer")
             }
-            .font(.caption2)
-            .foregroundStyle(.secondary)
+            .font(.ncCaption2)
+            .foregroundStyle(Color.ncMuted)
         }
-        .padding(12)
-        .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .padding(NCSpacing.md)
+        .background(Color.ncSurfaceElevated, in: RoundedRectangle(cornerRadius: NCRadius.small))
     }
 
     private func formatDuration(_ duration: TimeInterval) -> String {

@@ -2,52 +2,59 @@ import SwiftUI
 
 struct OnboardingView: View {
     let complete: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
     @State private var page = 0
 
     private let pages = OnboardingPage.pages
 
     var body: some View {
         ZStack {
-            Color.onboardingBackground
+            Color.ncBackground
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 OnboardingTopBar {
                     complete()
                 }
-                .padding(.horizontal, 22)
-                .padding(.top, 12)
+                .padding(.horizontal, NCSpacing.xxl)
+                .padding(.top, NCSpacing.md)
 
                 TabView(selection: $page) {
                     ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
                         OnboardingPageView(page: page)
                             .tag(index)
-                            .padding(.horizontal, 28)
+                            .padding(.horizontal, NCSpacing.xxxl)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
 
                 OnboardingProgress(current: page, count: pages.count)
-                    .padding(.bottom, 22)
+                    .padding(.bottom, NCSpacing.xxl)
 
                 Button {
                     if page == pages.count - 1 {
                         complete()
                     } else {
-                        withAnimation(.easeInOut(duration: 0.25)) {
+                        withAnimation(.ncSpring) {
                             page += 1
                         }
                     }
                 } label: {
                     Text(pages[page].buttonTitle)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.ncHeadline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
-                        .background(pages[page].isFinal ? Color.onboardingFinalButton : Color.onboardingPurple, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                        .background(
+                            pages[page].isFinal
+                                ? (colorScheme == .dark ? Color.ncPurple : Color(red: 0.06, green: 0.07, blue: 0.08))
+                                : Color.ncPurple,
+                            in: RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous)
+                        )
                 }
-                .padding(.horizontal, 28)
-                .padding(.bottom, 25)
+                .buttonStyle(NCPressButtonStyle())
+                .padding(.horizontal, NCSpacing.xxxl)
+                .padding(.bottom, NCSpacing.xxl + 1)
             }
         }
     }
@@ -58,13 +65,13 @@ private struct OnboardingTopBar: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: NCSpacing.xs + 1) {
                 Text("NoteCrux")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Color.onboardingInk)
+                    .font(.ncCaption2)
+                    .foregroundStyle(Color.ncInk)
 
                 Capsule()
-                    .fill(Color.onboardingPurple)
+                    .fill(Color.ncPurple)
                     .frame(width: 20, height: 3)
             }
 
@@ -73,7 +80,7 @@ private struct OnboardingTopBar: View {
             Button(action: close) {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(Color.onboardingMuted)
+                    .foregroundStyle(Color.ncMuted)
                     .frame(width: 32, height: 32)
             }
             .buttonStyle(.plain)
@@ -87,49 +94,49 @@ private struct OnboardingPageView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: 24)
+            Spacer(minLength: NCSpacing.xxl)
 
             page.hero
                 .frame(height: 200)
-                .padding(.bottom, 38)
+                .padding(.bottom, NCSpacing.xxxl + 6)
 
-            VStack(spacing: 13) {
+            VStack(spacing: NCSpacing.md + 1) {
                 Text(page.title)
-                    .font(.system(size: 23, weight: .bold))
-                    .foregroundStyle(Color.onboardingInk)
+                    .font(.ncTitle1)
+                    .foregroundStyle(Color.ncInk)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(page.subtitle)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.ncCallout)
                     .lineSpacing(4)
-                    .foregroundStyle(Color.onboardingMuted)
+                    .foregroundStyle(Color.ncMuted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: 290)
             }
 
             if !page.features.isEmpty {
-                VStack(spacing: 13) {
+                VStack(spacing: NCSpacing.md + 1) {
                     Text(page.featureTitle)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color.onboardingInk)
+                        .font(.ncCaption1)
+                        .foregroundStyle(Color.ncInk)
                         .padding(.top, 44)
 
                     Capsule()
-                        .fill(Color.onboardingPurple)
+                        .fill(Color.ncPurple)
                         .frame(width: 24, height: 3)
 
-                    VStack(spacing: 13) {
+                    VStack(spacing: NCSpacing.md + 1) {
                         ForEach(page.features) { feature in
                             OnboardingFeatureRow(feature: feature)
                         }
                     }
-                    .padding(.top, 18)
+                    .padding(.top, NCSpacing.xl)
                 }
             }
 
-            Spacer(minLength: 18)
+            Spacer(minLength: NCSpacing.xl)
         }
     }
 }
@@ -138,30 +145,30 @@ private struct OnboardingFeatureRow: View {
     let feature: OnboardingFeature
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: NCSpacing.lg) {
             Image(systemName: feature.icon)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(Color.onboardingPurple)
+                .font(.ncCallout)
+                .foregroundStyle(Color.ncPurple)
                 .frame(width: 34, height: 34)
-                .background(Color.onboardingPurple.opacity(0.09), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .background(Color.ncPurple.opacity(0.09), in: RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(feature.title)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Color.onboardingInk)
+                    .font(.ncCallout)
+                    .foregroundStyle(Color.ncInk)
 
                 Text(feature.subtitle)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Color.onboardingMuted)
+                    .font(.ncCaption2)
+                    .foregroundStyle(Color.ncMuted)
                     .lineLimit(2)
             }
 
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color.onboardingSurface, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-        .shadow(color: .black.opacity(0.025), radius: 12, y: 6)
+        .padding(.horizontal, NCSpacing.lg)
+        .padding(.vertical, NCSpacing.md)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.subtle)
     }
 }
 
@@ -173,11 +180,11 @@ private struct OnboardingProgress: View {
         HStack(spacing: 7) {
             ForEach(0..<count, id: \.self) { index in
                 Capsule()
-                    .fill(index == current ? Color.onboardingPurple : Color.onboardingPurple.opacity(0.26))
+                    .fill(index == current ? Color.ncPurple : Color.ncPurple.opacity(0.26))
                     .frame(width: index == current ? 18 : 5, height: 4)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: current)
+        .animation(.ncEaseOut, value: current)
     }
 }
 
@@ -189,7 +196,7 @@ private struct WaveHero: View {
             HStack(alignment: .center, spacing: 8) {
                 ForEach(0..<9, id: \.self) { index in
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.onboardingPurple)
+                        .fill(Color.ncPurple)
                         .frame(width: 4, height: [28, 54, 86, 116, 138, 104, 75, 46, 24][index])
                 }
             }
@@ -202,37 +209,37 @@ private struct WaveHero: View {
 
 private struct SecurityHero: View {
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: NCSpacing.xxl) {
             ZStack {
                 Circle()
-                    .fill(Color.onboardingPurple.opacity(0.08))
+                    .fill(Color.ncPurple.opacity(0.08))
                     .frame(width: 86, height: 86)
                 Image(systemName: "shield.lefthalf.filled")
                     .font(.system(size: 30, weight: .bold))
-                    .foregroundStyle(Color.onboardingPurple)
+                    .foregroundStyle(Color.ncPurple)
             }
 
-            VStack(spacing: 8) {
+            VStack(spacing: NCSpacing.sm) {
                 HStack(spacing: 7) {
                     Image(systemName: "lock.fill")
                     Text("SECURE STORAGE")
                 }
-                .font(.system(size: 8, weight: .bold))
+                .font(.ncOverline)
                 .tracking(0.8)
-                .foregroundStyle(Color.onboardingPurple)
+                .foregroundStyle(Color.ncPurple)
 
                 VStack(alignment: .leading, spacing: 5) {
                     ForEach(0..<5, id: \.self) { _ in
                         RoundedRectangle(cornerRadius: 2)
-                            .fill(Color.onboardingMuted.opacity(0.18))
+                            .fill(Color.ncMuted.opacity(0.18))
                             .frame(height: 5)
                     }
                 }
             }
-            .padding(16)
+            .padding(NCSpacing.lg)
             .frame(width: 190)
-            .background(Color.onboardingSurface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .shadow(color: .black.opacity(0.04), radius: 16, y: 7)
+            .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+            .ncShadow(.subtle)
         }
     }
 }
@@ -240,12 +247,12 @@ private struct SecurityHero: View {
 private struct RecorderHero: View {
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.onboardingSurface)
+            RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous)
+                .fill(Color.ncSurface)
                 .frame(width: 166, height: 122)
-                .shadow(color: .black.opacity(0.10), radius: 18, y: 10)
+                .ncShadow(.elevated)
 
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [Color(red: 1.0, green: 0.40, blue: 0.20), Color(red: 0.95, green: 0.18, blue: 0.12)],
@@ -257,11 +264,11 @@ private struct RecorderHero: View {
 
             ZStack {
                 Circle()
-                    .fill(Color.onboardingSurface.opacity(0.86))
+                    .fill(Color.ncSurface.opacity(0.86))
                     .frame(width: 42, height: 42)
                 Image(systemName: "mic.fill")
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Color.onboardingMuted)
+                    .foregroundStyle(Color.ncMuted)
             }
             .offset(x: 22, y: 14)
         }
@@ -317,13 +324,4 @@ private struct OnboardingFeature: Identifiable {
     let icon: String
     let title: String
     let subtitle: String
-}
-
-private extension Color {
-    static let onboardingBackground = Color.adaptive(light: (0.985, 0.984, 0.990), dark: (0.055, 0.056, 0.072))
-    static let onboardingSurface = Color.adaptive(light: (1.0, 1.0, 1.0), dark: (0.105, 0.108, 0.135))
-    static let onboardingInk = Color.adaptive(light: (0.11, 0.11, 0.13), dark: (0.93, 0.94, 0.97))
-    static let onboardingMuted = Color.adaptive(light: (0.48, 0.48, 0.55), dark: (0.62, 0.64, 0.72))
-    static let onboardingPurple = Color.adaptive(light: (0.25, 0.18, 0.86), dark: (0.58, 0.50, 1.0))
-    static let onboardingFinalButton = Color.adaptive(light: (0.06, 0.07, 0.08), dark: (0.25, 0.18, 0.86))
 }

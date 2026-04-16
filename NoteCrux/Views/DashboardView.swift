@@ -42,25 +42,25 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
-                Color.noteCruxDashboardBackground
+                Color.ncBackground
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: NCSpacing.lg + 2) {
                         DashboardHeader()
 
-                        VStack(spacing: 11) {
-                            DashboardMetricCard(
+                        VStack(spacing: NCSpacing.md) {
+                            NCMetricCard(
                                 title: "TODAY'S MEETINGS",
                                 value: "\(todaysMeetings.count)",
                                 isPrimary: true
                             )
-                            DashboardMetricCard(
+                            NCMetricCard(
                                 title: "PENDING TASKS",
                                 value: "\(pendingTasks.count)",
                                 isPrimary: false
                             )
-                            DashboardMetricCard(
+                            NCMetricCard(
                                 title: "RECENT HIGHLIGHTS",
                                 value: "\(recentHighlightsCount)",
                                 isPrimary: false
@@ -85,8 +85,8 @@ struct DashboardView: View {
 
                         HStack(alignment: .firstTextBaseline) {
                             Text("Recent Meetings")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundStyle(Color.noteCruxInk)
+                                .font(.ncTitle2)
+                                .foregroundStyle(Color.ncInk)
 
                             Spacer()
 
@@ -94,8 +94,8 @@ struct DashboardView: View {
                                 VaultView()
                             } label: {
                                 Text("View all")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundStyle(Color.noteCruxPurple)
+                                    .font(.ncCaption1.bold())
+                                    .foregroundStyle(Color.ncPurple)
                             }
                         }
                         .padding(.top, 6)
@@ -105,7 +105,7 @@ struct DashboardView: View {
                                 isRecording = true
                             }
                         } else {
-                            VStack(spacing: 18) {
+                            VStack(spacing: NCSpacing.lg + 2) {
                                 ForEach(Array(recentMeetings.enumerated()), id: \.element.id) { index, meeting in
                                     NavigationLink {
                                         InsightView(meeting: meeting)
@@ -117,8 +117,8 @@ struct DashboardView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.top, 14)
+                    .padding(.horizontal, NCSpacing.lg + 2)
+                    .padding(.top, NCSpacing.md + 2)
                     .padding(.bottom, 94)
                 }
 
@@ -126,15 +126,15 @@ struct DashboardView: View {
                     isRecording = true
                 } label: {
                     Label("Record Meeting", systemImage: "mic.fill")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.ncCallout.bold())
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 13)
-                        .background(Color.noteCruxPurple, in: Capsule())
-                        .shadow(color: Color.noteCruxPurple.opacity(0.25), radius: 14, y: 8)
+                        .padding(.horizontal, NCSpacing.lg + 2)
+                        .padding(.vertical, NCSpacing.md + 1)
+                        .background(Color.ncPurple, in: Capsule())
+                        .shadow(color: Color.ncPurple.opacity(0.25), radius: 14, y: 8)
                 }
-                .padding(.trailing, 18)
-                .padding(.bottom, 16)
+                .padding(.trailing, NCSpacing.lg + 2)
+                .padding(.bottom, NCSpacing.lg)
                 .accessibilityLabel("Record meeting")
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -233,31 +233,31 @@ struct DashboardView: View {
             if calendarService.events.isEmpty {
                 EmptyView()
             } else {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: NCSpacing.md) {
                     Text("Today's agenda")
-                        .font(.headline)
+                        .font(.ncHeadline)
                     if calendarService.todaysEvents.isEmpty {
                         Text("No events today.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.ncFootnote)
+                            .foregroundStyle(Color.ncSecondary)
                     } else {
                         ForEach(calendarService.todaysEvents) { event in
                             agendaRow(event: event)
                         }
                     }
                     if !calendarService.upcomingEvents.isEmpty {
-                        Divider().padding(.top, 4)
+                        Divider().padding(.top, NCSpacing.xs)
                         Text("Upcoming")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                            .font(.ncFootnote.weight(.semibold))
+                            .foregroundStyle(Color.ncSecondary)
                         ForEach(calendarService.upcomingEvents.prefix(5)) { event in
                             agendaRow(event: event)
                         }
                     }
                 }
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(NCSpacing.lg)
+                .background(Color.ncSurfaceElevated)
+                .clipShape(RoundedRectangle(cornerRadius: NCRadius.medium))
             }
         case .denied:
             calendarDeniedCard
@@ -276,10 +276,10 @@ struct DashboardView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(event.title).font(.subheadline.weight(.medium))
+                    Text(event.title).font(.ncFootnote.weight(.medium))
                     Text(Self.timeFormatter.string(from: event.startDate))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.ncCaption1)
+                        .foregroundStyle(Color.ncSecondary)
                 }
                 Spacer()
                 Image(systemName: "mic.circle.fill")
@@ -293,25 +293,25 @@ struct DashboardView: View {
     private var calendarDeniedCard: some View {
         HStack(alignment: .top) {
             Image(systemName: "calendar.badge.exclamationmark")
-                .foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 4) {
+                .foregroundStyle(Color.ncSecondary)
+            VStack(alignment: .leading, spacing: NCSpacing.xs) {
                 Text("Calendar access is off")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.ncFootnote.weight(.semibold))
                 Text("Enable calendar access in Settings to see today's agenda.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.ncCaption1)
+                    .foregroundStyle(Color.ncSecondary)
                 Button("Enable") {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)
                     }
                 }
-                .font(.caption.weight(.semibold))
+                .font(.ncCaption1.weight(.semibold))
                 .padding(.top, 2)
             }
         }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(NCSpacing.lg)
+        .background(Color.ncSurfaceElevated)
+        .clipShape(RoundedRectangle(cornerRadius: NCRadius.medium))
     }
 
     private static let timeFormatter: DateFormatter = {
@@ -334,17 +334,17 @@ private struct DashboardHeader: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("WELCOME BACK")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.ncOverline)
                     .tracking(0.8)
-                    .foregroundStyle(Color.noteCruxMuted)
+                    .foregroundStyle(Color.ncMuted)
 
                 Text("Good morning,")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Color.noteCruxInk)
+                    .font(.ncTitle3)
+                    .foregroundStyle(Color.ncInk)
 
                 Text("Bistro")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Color.noteCruxInk)
+                    .font(.ncTitle3)
+                    .foregroundStyle(Color.ncInk)
             }
 
             Spacer()
@@ -353,44 +353,20 @@ private struct DashboardHeader: View {
                 Circle()
                     .fill(
                         LinearGradient(
-                            colors: [Color.noteCruxPurple, Color(red: 0.98, green: 0.70, blue: 0.28)],
+                            colors: [Color.ncPurple, Color(red: 0.98, green: 0.70, blue: 0.28)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
 
                 Text("B")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.ncCallout.bold())
                     .foregroundStyle(.white)
             }
             .frame(width: 33, height: 33)
             .overlay(Circle().stroke(.white, lineWidth: 2))
-            .shadow(color: .black.opacity(0.10), radius: 5, y: 2)
+            .ncShadow(.subtle)
         }
-    }
-}
-
-private struct DashboardMetricCard: View {
-    let title: String
-    let value: String
-    let isPrimary: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Text(title)
-                .font(.system(size: 8, weight: .bold))
-                .tracking(0.7)
-                .foregroundStyle(Color.noteCruxMuted)
-
-            Text(value)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(isPrimary ? Color.noteCruxPurple : Color.noteCruxInk)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .frame(height: 78)
-        .background(Color.noteCruxSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .shadow(color: .black.opacity(0.035), radius: 12, y: 4)
     }
 }
 
@@ -427,43 +403,38 @@ private struct MeetingPreviewCard: View {
                 .frame(height: 156)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: NCSpacing.sm) {
                 Text("\(meeting.createdAt.dashboardDate)  •  \(meeting.duration.dashboardDuration)")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.ncOverline)
                     .tracking(0.6)
-                    .foregroundStyle(Color.noteCruxMuted)
+                    .foregroundStyle(Color.ncMuted)
 
                 Text(meeting.title)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.noteCruxInk)
+                    .font(.ncHeadline)
+                    .foregroundStyle(Color.ncInk)
                     .lineLimit(1)
 
                 Text(excerpt)
-                    .font(.system(size: 12, weight: .regular))
+                    .font(.ncFootnote)
                     .lineSpacing(2)
-                    .foregroundStyle(Color(red: 0.37, green: 0.38, blue: 0.44))
+                    .foregroundStyle(Color.ncSecondary)
                     .lineLimit(3)
 
                 HStack(spacing: 7) {
                     ForEach(chips, id: \.self) { chip in
-                        Text(chip)
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(chipColor(chip))
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 5)
-                            .background(chipColor(chip).opacity(0.12), in: Capsule())
+                        NCChip(label: chip, color: chipColor(chip))
                     }
                 }
             }
-            .padding(14)
+            .padding(NCSpacing.md + 2)
         }
-        .background(Color.noteCruxSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .shadow(color: .black.opacity(0.045), radius: 14, y: 6)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.card)
     }
 
     private func chipColor(_ chip: String) -> Color {
         let colors: [Color] = [
-            .noteCruxPurple,
+            .ncPurple,
             Color(red: 0.20, green: 0.53, blue: 0.83),
             Color(red: 0.84, green: 0.33, blue: 0.31),
             Color(red: 0.14, green: 0.56, blue: 0.43)
@@ -505,7 +476,7 @@ private struct MeetingThumbnail: View {
 
                 if index % 3 == 1 {
                     StickyWall()
-                        .padding(18)
+                        .padding(NCSpacing.lg + 2)
                 } else {
                     MeetingPeopleScene(index: index)
                 }
@@ -522,7 +493,7 @@ private struct MeetingPeopleScene: View {
             PersonShape(color: Color(red: 0.94, green: 0.72, blue: 0.42))
             PersonShape(color: Color(red: 0.20, green: 0.55, blue: 0.65))
         }
-        .padding(.bottom, 24)
+        .padding(.bottom, NCSpacing.xxl)
         .offset(x: index.isMultiple(of: 2) ? 10 : -12)
         .opacity(0.86)
     }
@@ -560,7 +531,7 @@ private struct StickyWall: View {
             }
         }
         .frame(width: 118)
-        .padding(16)
+        .padding(NCSpacing.lg)
         .background(.white.opacity(0.36), in: Circle())
     }
 }
@@ -575,31 +546,31 @@ private struct EmptyRecentMeetingCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .opacity(0.70)
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: NCSpacing.sm) {
                 Text("NO MEETINGS YET")
-                    .font(.system(size: 8, weight: .bold))
+                    .font(.ncOverline)
                     .tracking(0.6)
-                    .foregroundStyle(Color.noteCruxMuted)
+                    .foregroundStyle(Color.ncMuted)
 
                 Text("Start your first meeting")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.noteCruxInk)
+                    .font(.ncHeadline)
+                    .foregroundStyle(Color.ncInk)
 
                 Text("Record locally, transcribe offline, then turn the transcript into notes and tasks.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color(red: 0.37, green: 0.38, blue: 0.44))
+                    .font(.ncFootnote)
+                    .foregroundStyle(Color.ncSecondary)
                     .lineLimit(3)
 
                 Button(action: startRecording) {
                     Text("Record now")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color.noteCruxPurple)
+                        .font(.ncCaption1.bold())
+                        .foregroundStyle(Color.ncPurple)
                 }
             }
-            .padding(14)
+            .padding(NCSpacing.md + 2)
         }
-        .background(Color.noteCruxSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .shadow(color: .black.opacity(0.045), radius: 14, y: 6)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.card)
     }
 }
 
@@ -608,23 +579,20 @@ private struct FollowUpStrip: View {
     let remind: (MeetingActionItem) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("PENDING FOLLOW-UPS")
-                .font(.system(size: 8, weight: .bold))
-                .tracking(0.7)
-                .foregroundStyle(Color.noteCruxMuted)
+        VStack(alignment: .leading, spacing: NCSpacing.md) {
+            NCSectionHeader(title: "PENDING FOLLOW-UPS")
 
             ForEach(items) { item in
-                HStack(spacing: 10) {
+                HStack(spacing: NCSpacing.sm + 2) {
                     Image(systemName: item.priority == .high ? "exclamationmark" : "checkmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.ncCaption1.bold())
                         .foregroundStyle(.white)
                         .frame(width: 22, height: 22)
-                        .background(Color.noteCruxPurple, in: Circle())
+                        .background(Color.ncPurple, in: Circle())
 
                     Text(item.title)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.noteCruxInk)
+                        .font(.ncFootnote.weight(.semibold))
+                        .foregroundStyle(Color.ncInk)
                         .lineLimit(1)
 
                     Spacer()
@@ -632,14 +600,14 @@ private struct FollowUpStrip: View {
                     Button("Remind") {
                         remind(item)
                     }
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(Color.noteCruxPurple)
+                    .font(.ncCaption2)
+                    .foregroundStyle(Color.ncPurple)
                 }
             }
         }
-        .padding(14)
-        .background(Color.noteCruxSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .shadow(color: .black.opacity(0.035), radius: 12, y: 4)
+        .padding(NCSpacing.md + 2)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.subtle)
     }
 }
 
@@ -649,35 +617,32 @@ private struct RecoveryCard: View {
     let discard: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("UNSAVED RECORDING")
-                .font(.system(size: 8, weight: .bold))
-                .tracking(0.7)
-                .foregroundStyle(Color.noteCruxMuted)
+        VStack(alignment: .leading, spacing: NCSpacing.sm + 2) {
+            NCSectionHeader(title: "UNSAVED RECORDING")
 
             Text(draft.title.isEmpty ? "Recovered Meeting" : draft.title)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(Color.noteCruxInk)
+                .font(.ncHeadline)
+                .foregroundStyle(Color.ncInk)
 
             Text(draft.startedAt.formatted(date: .abbreviated, time: .shortened))
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+                .font(.ncFootnote)
+                .foregroundStyle(Color.ncSecondary)
 
             HStack {
                 Button("Recover", action: recover)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.ncFootnote.bold())
                     .buttonStyle(.borderedProminent)
-                    .tint(Color.noteCruxPurple)
+                    .tint(Color.ncPurple)
 
                 Button("Discard", role: .destructive, action: discard)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.ncFootnote.bold())
                     .buttonStyle(.bordered)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(Color.noteCruxSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .shadow(color: .black.opacity(0.035), radius: 12, y: 4)
+        .padding(NCSpacing.md + 2)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.subtle)
     }
 }
 
@@ -695,12 +660,4 @@ private extension TimeInterval {
         let minutes = max(1, Int((self / 60).rounded()))
         return "\(minutes) MINS"
     }
-}
-
-private extension Color {
-    static let noteCruxDashboardBackground = Color.adaptive(light: (0.965, 0.970, 0.980), dark: (0.055, 0.058, 0.075))
-    static let noteCruxSurface = Color.adaptive(light: (1.0, 1.0, 1.0), dark: (0.105, 0.108, 0.135))
-    static let noteCruxInk = Color.adaptive(light: (0.12, 0.13, 0.16), dark: (0.93, 0.94, 0.97))
-    static let noteCruxMuted = Color.adaptive(light: (0.56, 0.57, 0.64), dark: (0.62, 0.64, 0.72))
-    static let noteCruxPurple = Color.adaptive(light: (0.38, 0.27, 0.88), dark: (0.58, 0.50, 1.0))
 }

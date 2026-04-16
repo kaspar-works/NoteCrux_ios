@@ -46,17 +46,17 @@ struct TasksView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottomTrailing) {
-                Color.taskScreenBackground
+                Color.ncBackground
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: NCSpacing.xxl) {
                         TaskTopBar()
 
                         Text("Action Items")
-                            .font(.system(size: 31, weight: .bold))
-                            .foregroundStyle(Color.taskInk)
-                            .padding(.top, 10)
+                            .font(.ncLargeTitle)
+                            .foregroundStyle(Color.ncInk)
+                            .padding(.top, NCSpacing.sm + 2)
 
                         AIFollowUpCard(count: aiFollowUps.count) {
                             addFollowUpsToList()
@@ -69,7 +69,7 @@ struct TasksView: View {
                                 createManualTask()
                             }
                         } else {
-                            VStack(spacing: 22) {
+                            VStack(spacing: NCSpacing.xxl - 2) {
                                 TaskSectionHeader(title: "TODAY", count: todayItems.count)
                                 TaskCardList(items: todayItems)
 
@@ -83,8 +83,8 @@ struct TasksView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 22)
-                    .padding(.top, 16)
+                    .padding(.horizontal, NCSpacing.xxl - 2)
+                    .padding(.top, NCSpacing.lg)
                     .padding(.bottom, 104)
                 }
 
@@ -95,11 +95,11 @@ struct TasksView: View {
                         .font(.system(size: 24, weight: .medium))
                         .foregroundStyle(.white)
                         .frame(width: 56, height: 56)
-                        .background(Color.taskPurple, in: Circle())
-                        .shadow(color: Color.taskPurple.opacity(0.28), radius: 16, y: 8)
+                        .background(Color.ncPurple, in: Circle())
+                        .shadow(color: Color.ncPurple.opacity(0.28), radius: NCSpacing.lg, y: NCSpacing.sm)
                 }
-                .padding(.trailing, 21)
-                .padding(.bottom, 18)
+                .padding(.trailing, NCSpacing.xl)
+                .padding(.bottom, NCSpacing.lg + 2)
                 .accessibilityLabel("Add task")
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -157,26 +157,20 @@ struct TasksView: View {
 
 private struct TaskTopBar: View {
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: NCSpacing.md) {
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(red: 0.04, green: 0.42, blue: 0.43), Color(red: 0.97, green: 0.72, blue: 0.45)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(NoteCruxTheme.brandGradient)
 
                 Image(systemName: "waveform")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.ncFootnote.bold())
                     .foregroundStyle(.white)
             }
             .frame(width: 34, height: 34)
 
             Text("NoteCrux")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(Color.taskInk)
+                .font(.ncTitle2.weight(.bold))
+                .foregroundStyle(Color.ncInk)
 
             Spacer()
 
@@ -185,7 +179,7 @@ private struct TaskTopBar: View {
             } label: {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 21, weight: .semibold))
-                    .foregroundStyle(Color.taskMuted)
+                    .foregroundStyle(Color.ncMuted)
                     .frame(width: 34, height: 34)
             }
             .buttonStyle(.plain)
@@ -198,43 +192,33 @@ private struct AIFollowUpCard: View {
     let add: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 15) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(Color.taskPurple.opacity(0.12))
+        NCCard {
+            HStack(alignment: .top, spacing: NCSpacing.lg - 1) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(Color.ncPurple.opacity(0.12))
 
-                Image(systemName: "sparkles")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(Color.taskPurple)
-            }
-            .frame(width: 36, height: 36)
-
-            VStack(alignment: .leading, spacing: 14) {
-                Text("I've detected \(count) new follow-up\(count == 1 ? "" : "s") from your latest meeting. Shall I add them to your list?")
-                    .font(.system(size: 14, weight: .semibold))
-                    .lineSpacing(3)
-                    .foregroundStyle(Color.taskInk)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Button(action: add) {
-                    Text("Add to list")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 28)
-                        .padding(.vertical, 12)
-                        .background(Color.taskPurple, in: Capsule())
-                        .shadow(color: Color.taskPurple.opacity(0.24), radius: 10, y: 5)
+                    Image(systemName: "sparkles")
+                        .font(.ncHeadline.bold())
+                        .foregroundStyle(Color.ncPurple)
                 }
-                .disabled(count == 0)
-                .opacity(count == 0 ? 0.55 : 1)
-            }
+                .frame(width: 36, height: 36)
 
-            Spacer(minLength: 0)
+                VStack(alignment: .leading, spacing: NCSpacing.md + 2) {
+                    Text("I've detected \(count) new follow-up\(count == 1 ? "" : "s") from your latest meeting. Shall I add them to your list?")
+                        .font(.ncCallout.bold())
+                        .lineSpacing(3)
+                        .foregroundStyle(Color.ncInk)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    NCButton(title: "Add to list", action: add)
+                        .disabled(count == 0)
+                        .opacity(count == 0 ? 0.55 : 1)
+                }
+
+                Spacer(minLength: 0)
+            }
         }
-        .padding(.horizontal, 22)
-        .padding(.vertical, 24)
-        .background(Color.taskSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: .black.opacity(0.045), radius: 18, y: 8)
     }
 }
 
@@ -242,17 +226,17 @@ private struct TaskSegmentedFilter: View {
     @Binding var selection: TaskFilter
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: NCSpacing.sm + 2) {
             ForEach(TaskFilter.allCases) { filter in
                 Button {
                     selection = filter
                 } label: {
                     Text(filter.rawValue)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(selection == filter ? .white : Color.taskMuted)
+                        .font(.ncCallout.bold())
+                        .foregroundStyle(selection == filter ? .white : Color.ncMuted)
                         .frame(height: 38)
-                        .padding(.horizontal, 19)
-                        .background(selection == filter ? Color.taskPurple : Color.taskSurface.opacity(0.78), in: Capsule())
+                        .padding(.horizontal, NCSpacing.xl - 1)
+                        .background(selection == filter ? Color.ncPurple : Color.ncSurface.opacity(0.78), in: Capsule())
                 }
                 .buttonStyle(.plain)
             }
@@ -267,18 +251,18 @@ private struct TaskSectionHeader: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.system(size: 10, weight: .bold))
+                .font(.ncCaption2)
                 .tracking(1.7)
-                .foregroundStyle(Color.taskMuted)
+                .foregroundStyle(Color.ncMuted)
 
             Spacer()
 
             Text("\(count) task\(count == 1 ? "" : "s")")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Color.taskMuted)
+                .font(.ncCaption1.bold())
+                .foregroundStyle(Color.ncMuted)
         }
-        .padding(.horizontal, 8)
-        .padding(.bottom, -10)
+        .padding(.horizontal, NCSpacing.sm)
+        .padding(.bottom, -NCSpacing.sm - 2)
     }
 }
 
@@ -286,7 +270,7 @@ private struct TaskCardList: View {
     let items: [MeetingActionItem]
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: NCSpacing.md + 2) {
             ForEach(items) { item in
                 CompactTaskCard(item: item)
             }
@@ -299,7 +283,7 @@ private struct CompactTaskCard: View {
     @Bindable var item: MeetingActionItem
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: NCSpacing.md + 2) {
             Button {
                 item.isComplete.toggle()
                 if item.isComplete {
@@ -309,12 +293,12 @@ private struct CompactTaskCard: View {
                 save()
             } label: {
                 Circle()
-                    .stroke(item.isComplete ? Color.taskPurple : Color(red: 0.78, green: 0.78, blue: 0.88), lineWidth: 2)
+                    .stroke(item.isComplete ? Color.ncPurple : Color(red: 0.78, green: 0.78, blue: 0.88), lineWidth: 2)
                     .overlay {
                         if item.isComplete {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(Color.taskPurple)
+                                .font(.ncOverline)
+                                .foregroundStyle(Color.ncPurple)
                         }
                     }
                     .frame(width: 22, height: 22)
@@ -322,11 +306,11 @@ private struct CompactTaskCard: View {
             .buttonStyle(.plain)
             .padding(.top, 2)
 
-            VStack(alignment: .leading, spacing: 9) {
+            VStack(alignment: .leading, spacing: NCSpacing.sm + 1) {
                 HStack(alignment: .top) {
                     Text(item.title)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Color.taskInk)
+                        .font(.ncTitle3)
+                        .foregroundStyle(Color.ncInk)
                         .strikethrough(item.isComplete)
                         .lineLimit(2)
 
@@ -336,26 +320,26 @@ private struct CompactTaskCard: View {
                 }
 
                 Text(dueText)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Color.taskMuted)
+                    .font(.ncFootnote.weight(.medium))
+                    .foregroundStyle(Color.ncMuted)
 
                 if let meetingTitle = item.meeting?.title, !meetingTitle.isEmpty {
                     Label(meetingTitle, systemImage: "folder.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.taskMuted)
+                        .font(.ncCaption1.bold())
+                        .foregroundStyle(Color.ncMuted)
                         .lineLimit(1)
                 } else if !item.owner.isEmpty {
                     Label(item.owner, systemImage: "person.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color.taskMuted)
+                        .font(.ncCaption1.bold())
+                        .foregroundStyle(Color.ncMuted)
                         .lineLimit(1)
                 }
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 18)
-        .background(Color.taskSurface, in: RoundedRectangle(cornerRadius: 17, style: .continuous))
-        .shadow(color: .black.opacity(0.035), radius: 16, y: 7)
+        .padding(.horizontal, NCSpacing.lg + 2)
+        .padding(.vertical, NCSpacing.lg + 2)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.card)
     }
 
     private var dueText: String {
@@ -384,11 +368,11 @@ private struct PriorityPill: View {
 
     var body: some View {
         Text(priority.shortLabel)
-            .font(.system(size: 8, weight: .bold))
+            .font(.ncOverline)
             .tracking(0.7)
             .foregroundStyle(priority.color)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
+            .padding(.horizontal, NCSpacing.sm + 1)
+            .padding(.vertical, NCSpacing.xs + 1)
             .background(priority.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 }
@@ -398,29 +382,20 @@ private struct EmptyTaskCard: View {
     let add: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(filter.emptyTitle)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(Color.taskInk)
+        NCCard {
+            VStack(alignment: .leading, spacing: NCSpacing.md) {
+                Text(filter.emptyTitle)
+                    .font(.ncTitle3.weight(.bold))
+                    .foregroundStyle(Color.ncInk)
 
-            Text(filter.emptyDescription)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.taskMuted)
-                .lineSpacing(3)
+                Text(filter.emptyDescription)
+                    .font(.ncCallout.weight(.medium))
+                    .foregroundStyle(Color.ncMuted)
+                    .lineSpacing(3)
 
-            Button(action: add) {
-                Text("Create task")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 11)
-                    .background(Color.taskPurple, in: Capsule())
+                NCButton(title: "Create task", action: add)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(22)
-        .background(Color.taskSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: .black.opacity(0.045), radius: 18, y: 8)
     }
 }
 
@@ -466,19 +441,11 @@ private extension TaskPriority {
     var color: Color {
         switch self {
         case .high:
-            return Color(red: 0.83, green: 0.20, blue: 0.28)
+            return Color.ncDanger
         case .medium:
-            return Color.taskPurple
+            return Color.ncPurple
         case .low:
             return Color(red: 0.31, green: 0.55, blue: 0.70)
         }
     }
-}
-
-private extension Color {
-    static let taskScreenBackground = Color.adaptive(light: (0.978, 0.978, 0.986), dark: (0.055, 0.056, 0.072))
-    static let taskSurface = Color.adaptive(light: (1.0, 1.0, 1.0), dark: (0.105, 0.108, 0.135))
-    static let taskInk = Color.adaptive(light: (0.14, 0.14, 0.16), dark: (0.93, 0.94, 0.97))
-    static let taskMuted = Color.adaptive(light: (0.57, 0.57, 0.64), dark: (0.62, 0.64, 0.72))
-    static let taskPurple = Color.adaptive(light: (0.25, 0.18, 0.86), dark: (0.58, 0.50, 1.0))
 }

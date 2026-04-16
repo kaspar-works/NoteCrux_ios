@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct AppLockView: View {
-    @Environment(\.colorScheme) private var colorScheme
     let useBiometrics: Bool
     let pinHash: String
     let unlock: () -> Void
@@ -11,27 +10,27 @@ struct AppLockView: View {
 
     var body: some View {
         ZStack {
-            NoteCruxTheme.background(for: colorScheme).ignoresSafeArea()
+            Color.ncBackground.ignoresSafeArea()
 
-            VStack(spacing: 22) {
+            VStack(spacing: NCSpacing.xxl) {
                 Image(systemName: "lock.shield")
                     .font(.system(size: 58, weight: .semibold))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.ncPurple)
 
                 Text("NoteCrux Locked")
-                    .font(.largeTitle.bold())
+                    .font(.ncLargeTitle)
 
                 Text("Unlock to access your private meeting data.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(.ncBody)
+                    .foregroundStyle(Color.ncMuted)
                     .multilineTextAlignment(.center)
 
                 if !pinHash.isEmpty {
                     SecureField("PIN", text: $pin)
                         .keyboardType(.numberPad)
                         .textContentType(.oneTimeCode)
-                        .padding(12)
-                        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                        .padding(NCSpacing.md)
+                        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.small))
                         .frame(maxWidth: 260)
 
                     Button("Unlock with PIN") {
@@ -42,7 +41,7 @@ struct AppLockView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.green)
+                    .tint(Color.ncPurple)
                 }
 
                 if useBiometrics {
@@ -54,11 +53,11 @@ struct AppLockView: View {
 
                 if let message {
                     Text(message)
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                        .font(.ncCaption1)
+                        .foregroundStyle(Color.ncDanger)
                 }
             }
-            .padding(28)
+            .padding(NCSpacing.xxxl)
         }
         .task {
             if useBiometrics {

@@ -52,7 +52,7 @@ struct RecordingRoomView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.recordingBackground
+                Color.ncBackground
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
@@ -69,9 +69,9 @@ struct RecordingRoomView: View {
                         )
 
                         Text(formatDuration(elapsed))
-                            .font(.system(size: 54, weight: .bold, design: .monospaced))
-                            .foregroundStyle(Color.recordingInk)
-                            .padding(.top, 18)
+                            .font(.ncMonoLarge)
+                            .foregroundStyle(Color.ncInk)
+                            .padding(.top, NCSpacing.lg + 2)
 
                         MiniWaveform(level: recorder.audioLevel)
                             .frame(width: 104, height: 42)
@@ -79,22 +79,22 @@ struct RecordingRoomView: View {
 
                         ZStack {
                             Circle()
-                                .fill(Color.recordingPurple.opacity(0.10))
+                                .fill(Color.ncPurple.opacity(0.10))
                                 .frame(width: 190, height: 190)
                             Circle()
-                                .fill(Color.recordingPurple.opacity(0.22))
+                                .fill(Color.ncPurple.opacity(0.22))
                                 .frame(width: 164, height: 164)
                             Circle()
-                                .fill(Color.recordingPurple.opacity(0.42))
+                                .fill(Color.ncPurple.opacity(0.42))
                                 .frame(width: 146, height: 146)
 
                             Image(systemName: "mic.fill")
                                 .font(.system(size: 42, weight: .semibold))
                                 .foregroundStyle(.white)
                         }
-                        .padding(.top, 25)
+                        .padding(.top, NCSpacing.xxl)
 
-                        VStack(spacing: 12) {
+                        VStack(spacing: NCSpacing.md) {
                             LiveInsightsCard(
                                 text: liveInsightText,
                                 isProcessing: isLiveProcessing
@@ -122,11 +122,11 @@ struct RecordingRoomView: View {
 
                         if let message = recorder.authorizationMessage {
                             Text(message)
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.ncFootnote.bold())
                                 .foregroundStyle(.red)
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, 24)
-                                .padding(.top, 16)
+                                .padding(.horizontal, NCSpacing.xxl)
+                                .padding(.top, NCSpacing.lg)
                         }
 
                         RecordingControls(
@@ -142,10 +142,10 @@ struct RecordingRoomView: View {
                                 bookmarkedSeconds.append(elapsed)
                             }
                         )
-                        .padding(.top, 35)
-                        .padding(.bottom, 26)
+                        .padding(.top, NCSpacing.xxxl)
+                        .padding(.bottom, NCSpacing.xxl + 2)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, NCSpacing.xl)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -297,26 +297,28 @@ private struct RecordingHeader: View {
     let options: () -> Void
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: NCSpacing.sm - 2) {
             HStack {
                 Button(action: back) {
                     Label("BACK TO MEETINGS", systemImage: "chevron.left")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.ncFootnote.bold())
                         .tracking(1.0)
-                        .foregroundStyle(Color.recordingMuted)
+                        .foregroundStyle(Color.ncMuted)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(NCPressButtonStyle())
 
                 Spacer()
 
-                HStack(spacing: 8) {
+                HStack(spacing: NCSpacing.sm) {
                     Circle()
-                        .fill(Color(red: 0.78, green: 0.25, blue: 0.27))
+                        .fill(Color.ncDanger)
                         .frame(width: 7, height: 7)
+                        .shadow(color: Color.ncDanger.opacity(0.5), radius: 4, y: 0)
+                        .modifier(PulsingDotModifier())
                     Text("REC")
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.ncCallout.bold())
                         .tracking(1.4)
-                        .foregroundStyle(Color.recordingMuted)
+                        .foregroundStyle(Color.ncMuted)
                 }
 
                 Spacer()
@@ -324,20 +326,35 @@ private struct RecordingHeader: View {
                 Button(action: options) {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 21, weight: .bold))
-                        .foregroundStyle(Color.recordingMuted)
+                        .foregroundStyle(Color.ncMuted)
                         .frame(width: 28, height: 28)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(NCPressButtonStyle())
             }
 
             Text("STRATEGY SYNC SESSION")
-                .font(.system(size: 13, weight: .bold))
+                .font(.ncCallout.bold())
                 .tracking(4.0)
-                .foregroundStyle(Color.recordingInk)
+                .foregroundStyle(Color.ncInk)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
-        .padding(.top, 10)
+        .padding(.top, NCSpacing.sm + 2)
+    }
+}
+
+private struct PulsingDotModifier: ViewModifier {
+    @State private var isPulsing = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isPulsing ? 0.3 : 1.0)
+            .animation(
+                .easeInOut(duration: 0.8)
+                .repeatForever(autoreverses: true),
+                value: isPulsing
+            )
+            .onAppear { isPulsing = true }
     }
 }
 
@@ -345,11 +362,11 @@ private struct MiniWaveform: View {
     let level: CGFloat
 
     var body: some View {
-        HStack(alignment: .center, spacing: 6) {
+        HStack(alignment: .center, spacing: NCSpacing.sm - 2) {
             ForEach(0..<8, id: \.self) { index in
                 let base = CGFloat([0.24, 0.34, 0.22, 0.50, 0.82, 0.45, 0.30, 0.22][index])
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.recordingPurple)
+                    .fill(Color.ncPurple)
                     .frame(width: 4, height: 8 + 28 * max(base, level * base))
             }
         }
@@ -362,12 +379,12 @@ private struct LiveInsightsCard: View {
     let isProcessing: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: NCSpacing.md) {
+            HStack(spacing: NCSpacing.sm) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.ncFootnote.bold())
                 Text("AI LIVE INSIGHTS")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.ncCallout.bold())
                     .tracking(0.8)
 
                 Spacer()
@@ -377,19 +394,19 @@ private struct LiveInsightsCard: View {
                         .scaleEffect(0.72)
                 }
             }
-            .foregroundStyle(Color.recordingPurple)
+            .foregroundStyle(Color.ncPurple)
 
             Text(text)
-                .font(.system(size: 15, weight: .medium))
+                .font(.ncBody.weight(.medium))
                 .italic()
                 .lineSpacing(6)
-                .foregroundStyle(Color.recordingMuted)
+                .foregroundStyle(Color.ncMuted)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineLimit(4)
         }
-        .padding(22)
-        .background(Color.recordingSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(color: .black.opacity(0.035), radius: 18, y: 8)
+        .padding(NCSpacing.xl + 2)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.card)
     }
 }
 
@@ -397,20 +414,20 @@ private struct TranscriptToggle: View {
     @Binding var isOn: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: NCSpacing.md) {
             Text("Live Transcription")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(Color.recordingMuted)
+                .font(.ncCallout.bold())
+                .foregroundStyle(Color.ncMuted)
 
             Toggle("", isOn: $isOn)
                 .labelsHidden()
-                .tint(Color.recordingPurple)
+                .tint(Color.ncPurple)
                 .scaleEffect(0.82)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, NCSpacing.lg)
         .frame(height: 36)
-        .background(Color.recordingSurface, in: Capsule())
-        .shadow(color: .black.opacity(0.025), radius: 8, y: 4)
+        .background(Color.ncSurface, in: Capsule())
+        .ncShadow(.subtle)
     }
 }
 
@@ -419,18 +436,18 @@ private struct TranscriptPreview: View {
     let timestampedLines: [String]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: NCSpacing.sm + 2) {
             TextEditor(text: $transcript)
-                .font(.system(size: 13))
-                .foregroundStyle(Color.recordingInk)
+                .font(.ncCallout)
+                .foregroundStyle(Color.ncInk)
                 .scrollContentBackground(.hidden)
                 .frame(minHeight: 92, maxHeight: 118)
                 .overlay(alignment: .topLeading) {
                     if transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Text("Listening for local speech...")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.recordingMuted)
-                            .padding(.top, 8)
+                            .font(.ncCallout.weight(.medium))
+                            .foregroundStyle(Color.ncMuted)
+                            .padding(.top, NCSpacing.sm)
                             .padding(.leading, 5)
                     }
                 }
@@ -440,20 +457,20 @@ private struct TranscriptPreview: View {
                     HStack(spacing: 7) {
                         ForEach(timestampedLines.suffix(4), id: \.self) { line in
                             Text(line)
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.ncCaption2.weight(.semibold))
                                 .lineLimit(1)
-                                .foregroundStyle(Color.recordingMuted)
+                                .foregroundStyle(Color.ncMuted)
                                 .padding(.horizontal, 9)
-                                .padding(.vertical, 6)
-                                .background(Color.recordingBackground, in: Capsule())
+                                .padding(.vertical, NCSpacing.sm - 2)
+                                .background(Color.ncBackground, in: Capsule())
                         }
                     }
                 }
             }
         }
-        .padding(14)
-        .background(Color.recordingSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: .black.opacity(0.025), radius: 12, y: 6)
+        .padding(NCSpacing.lg - 2)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.subtle)
     }
 }
 
@@ -463,7 +480,7 @@ private struct RecordingOptionsCard: View {
     @Binding var selectedTags: Set<String>
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: NCSpacing.md) {
             HStack {
                 Picker("Template", selection: $selectedTemplate) {
                     ForEach(MeetingTemplate.allCases) { template in
@@ -483,7 +500,7 @@ private struct RecordingOptionsCard: View {
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: NCSpacing.sm) {
                     ForEach(Array(MeetingTag.allCases)) { tag in
                         let isSelected = selectedTags.contains(tag.rawValue)
                         Button {
@@ -494,20 +511,20 @@ private struct RecordingOptionsCard: View {
                             }
                         } label: {
                             Text(tag.rawValue)
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(isSelected ? .white : Color.recordingPurple)
-                                .padding(.horizontal, 10)
+                                .font(.ncCaption1.bold())
+                                .foregroundStyle(isSelected ? .white : Color.ncPurple)
+                                .padding(.horizontal, NCSpacing.sm + 2)
                                 .padding(.vertical, 7)
-                                .background(isSelected ? Color.recordingPurple : Color.recordingPurple.opacity(0.10), in: Capsule())
+                                .background(isSelected ? Color.ncPurple : Color.ncPurple.opacity(0.10), in: Capsule())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(NCPressButtonStyle())
                     }
                 }
             }
         }
-        .padding(16)
-        .background(Color.recordingSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: .black.opacity(0.025), radius: 12, y: 6)
+        .padding(NCSpacing.lg)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.subtle)
     }
 }
 
@@ -523,8 +540,8 @@ private struct RecordingControls: View {
             RecordingControlButton(
                 icon: isPaused ? "play.fill" : "pause.fill",
                 title: isPaused ? "RESUME" : "PAUSE",
-                fill: Color(red: 0.91, green: 0.91, blue: 0.92),
-                foreground: Color.recordingInk,
+                fill: Color.ncSurfaceElevated,
+                foreground: Color.ncInk,
                 action: pauseOrResume
             )
 
@@ -533,7 +550,7 @@ private struct RecordingControls: View {
             RecordingControlButton(
                 icon: isSaving ? "hourglass" : "stop.fill",
                 title: "STOP &\nSAVE",
-                fill: Color(red: 0.77, green: 0.06, blue: 0.08),
+                fill: Color.ncDanger,
                 foreground: .white,
                 action: stop
             )
@@ -544,8 +561,8 @@ private struct RecordingControls: View {
             RecordingControlButton(
                 icon: "list.bullet.rectangle.fill",
                 title: "MARK\nMOMENT",
-                fill: Color(red: 0.91, green: 0.91, blue: 0.92),
-                foreground: Color.recordingInk,
+                fill: Color.ncSurfaceElevated,
+                foreground: Color.ncInk,
                 action: mark
             )
         }
@@ -562,11 +579,12 @@ private struct RecordingControlButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 10) {
+            VStack(spacing: NCSpacing.sm + 2) {
                 ZStack {
                     Circle()
                         .fill(fill)
                         .frame(width: 72, height: 72)
+                        .ncShadow(.card)
 
                     Image(systemName: icon)
                         .font(.system(size: 22, weight: .bold))
@@ -574,21 +592,13 @@ private struct RecordingControlButton: View {
                 }
 
                 Text(title)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.ncCaption1.bold())
                     .tracking(1.4)
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(fill == Color(red: 0.77, green: 0.06, blue: 0.08) ? fill : Color.recordingMuted)
+                    .foregroundStyle(fill == Color.ncDanger ? fill : Color.ncMuted)
                     .frame(width: 82)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NCPressButtonStyle())
     }
-}
-
-private extension Color {
-    static let recordingBackground = Color.adaptive(light: (0.982, 0.981, 0.988), dark: (0.055, 0.056, 0.072))
-    static let recordingSurface = Color.adaptive(light: (1.0, 1.0, 1.0), dark: (0.105, 0.108, 0.135))
-    static let recordingInk = Color.adaptive(light: (0.13, 0.13, 0.15), dark: (0.93, 0.94, 0.97))
-    static let recordingMuted = Color.adaptive(light: (0.39, 0.39, 0.47), dark: (0.62, 0.64, 0.72))
-    static let recordingPurple = Color.adaptive(light: (0.32, 0.25, 0.86), dark: (0.58, 0.50, 1.0))
 }
