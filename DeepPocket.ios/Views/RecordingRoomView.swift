@@ -2,6 +2,18 @@ import SwiftData
 import SwiftUI
 
 struct RecordingRoomView: View {
+
+    struct InitialContext: Equatable {
+        let title: String
+        let tags: [String]
+    }
+
+    let initialContext: InitialContext?
+
+    init(initialContext: InitialContext? = nil) {
+        self.initialContext = initialContext
+    }
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @StateObject private var recorder = RecordingTranscriptionController()
@@ -142,6 +154,12 @@ struct RecordingRoomView: View {
             startedAt = .now
             meetingTitle = "\(selectedTemplate.titlePrefix) \(startedAt.formatted(date: .abbreviated, time: .shortened))"
             selectedTags = Set(selectedTemplate.defaultTags)
+            if let ctx = initialContext {
+                meetingTitle = ctx.title
+                for tag in ctx.tags where !selectedTags.contains(tag) {
+                    selectedTags.insert(tag)
+                }
+            }
             await recorder.start(localeIdentifier: selectedLanguage.localeIdentifier)
         }
         .onChange(of: selectedTemplate) { _, template in
