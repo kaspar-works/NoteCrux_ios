@@ -1,10 +1,90 @@
 import Foundation
+import OSLog
 
 struct MeetingAssistantEngine {
     private let search = LocalMeetingSearch()
     private let proEngine = ProInsightsEngine()
 
-    func answer(question: String, meetings: [Meeting], tasks: [MeetingActionItem]) -> String {
+    struct AnswerResult {
+        let answer: String
+        let citedMeetings: [Meeting]
+        let usedFM: Bool
+    }
+
+    func answer(
+        question: String,
+        meetings: [Meeting],
+        tasks: [MeetingActionItem],
+        topN: Int = 5
+    ) async -> AnswerResult {
+        let ranked = rankedMeetings(for: question, in: meetings).prefix(topN)
+
+        guard FoundationModelClient.shared.isAvailable else {
+            return AnswerResult(
+                answer: keywordAnswer(question: question, meetings: meetings, tasks: tasks),
+                citedMeetings: Array(ranked),
+                usedFM: false
+            )
+        }
+
+        #if canImport(FoundationModels)
+        let context = ranked.map { meeting in
+            FoundationModelClient.MeetingContext(
+                title: meeting.title,
+                summary: meeting.summary,
+                createdAt: meeting.createdAt
+            )
+        }
+
+        do {
+            let fm = try await FoundationModelClient.shared.answer(question: question, context: context)
+            // Map cited titles back to Meetings; capped at 5 in the prompt.
+            let cited = fm.citedMeetingTitles.compactMap { title in
+                meetings.first(where: { $0.title == title })
+            }
+            return AnswerResult(answer: fm.answer, citedMeetings: cited, usedFM: true)
+        } catch {
+            DeepPocketLog.ai.debug("MeetingAssistantEngine: FM failed, falling back to keyword")
+            return AnswerResult(
+                answer: keywordAnswer(question: question, meetings: meetings, tasks: tasks),
+                citedMeetings: Array(ranked),
+                usedFM: false
+            )
+        }
+        #else
+        return AnswerResult(
+            answer: keywordAnswer(question: question, meetings: meetings, tasks: tasks),
+            citedMeetings: Array(ranked),
+            usedFM: false
+        )
+        #endif
+    }
+
+    /// Simple keyword-score ranking for context selection. Independent of keywordAnswer output text.
+    func rankedMeetings(for query: String, in meetings: [Meeting]) -> [Meeting] {
+        let terms = query
+            .lowercased()
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+            .filter { $0.count >= 3 }
+
+        guard !terms.isEmpty else { return meetings.sorted { $0.createdAt > $1.createdAt } }
+
+        func score(_ meeting: Meeting) -> Int {
+            let haystack = (meeting.title + " " + meeting.summary + " " + meeting.transcript).lowercased()
+            return terms.reduce(0) { partial, term in
+                partial + (haystack.contains(term) ? 1 : 0)
+            }
+        }
+
+        return meetings
+            .map { (score($0), $0) }
+            .filter { $0.0 > 0 }
+            .sorted { $0.0 > $1.0 }
+            .map { $0.1 }
+    }
+
+    func keywordAnswer(question: String, meetings: [Meeting], tasks: [MeetingActionItem]) -> String {
         let query = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else {
             return "Ask about decisions, tasks, deadlines, issues, or a topic from your meetings."

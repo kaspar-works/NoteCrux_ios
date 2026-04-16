@@ -12,6 +12,8 @@ struct AssistantView: View {
         )
     ]
     @State private var question = ""
+    @State private var isAnswering = false
+    @State private var lastCitations: [Meeting] = []
 
     private let engine = MeetingAssistantEngine()
 
@@ -25,6 +27,26 @@ struct AssistantView: View {
                         LazyVStack(alignment: .leading, spacing: 12) {
                             ForEach(messages) { message in
                                 AssistantBubble(message: message)
+                            }
+                            if !lastCitations.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Sources")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                    ForEach(lastCitations.prefix(5), id: \.id) { meeting in
+                                        NavigationLink(destination: InsightView(meeting: meeting)) {
+                                            HStack {
+                                                Image(systemName: "doc.text")
+                                                Text(meeting.title)
+                                                    .font(.caption)
+                                                Spacer()
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.top, 8)
+                                .padding(.horizontal, 12)
                             }
                         }
                         .padding()
@@ -64,9 +86,14 @@ struct AssistantView: View {
         guard !prompt.isEmpty else { return }
 
         messages.append(AssistantMessage(role: .user, text: prompt))
-        let response = engine.answer(question: prompt, meetings: meetings, tasks: tasks)
-        messages.append(AssistantMessage(role: .assistant, text: response))
         question = ""
+        Task {
+            isAnswering = true
+            defer { isAnswering = false }
+            let result = await engine.answer(question: prompt, meetings: meetings, tasks: tasks)
+            lastCitations = result.citedMeetings
+            messages.append(AssistantMessage(role: .assistant, text: result.answer))
+        }
     }
 }
 
