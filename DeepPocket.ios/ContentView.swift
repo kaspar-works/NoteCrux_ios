@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(AppRouter.self) private var router
     @AppStorage("appLockEnabled") private var appLockEnabled = true
     @AppStorage("appLockBiometricsEnabled") private var appLockBiometricsEnabled = true
     @AppStorage("pinHash") private var pinHash = ""
@@ -80,6 +81,14 @@ struct ContentView: View {
                     isUnlocked = false
                 }
             }
+        }
+        .onChange(of: router.pendingRecordingRequest) { _, newValue in
+            guard let request = router.consumeRecordingRequest() else { return }
+            recordingInitialContext = RecordingRoomView.InitialContext(
+                title: request.title ?? "",
+                tags: request.tags
+            )
+            isRecording = true
         }
     }
 
