@@ -11,6 +11,7 @@ struct StartRecordingIntent: AppIntent {
 
     @Dependency private var router: AppRouter
 
+    @MainActor
     func perform() async throws -> some IntentResult {
         router.requestRecording()
         DeepPocketLog.intents.debug("StartRecordingIntent fired")

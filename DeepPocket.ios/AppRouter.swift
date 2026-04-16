@@ -4,8 +4,11 @@ import OSLog
 
 /// Shared coordinator for intent → app navigation.
 /// Siri intents post requests here; ContentView observes and reacts.
+/// Main-actor-isolated because it's consumed by SwiftUI views and mutated from
+/// intent perform() methods that marshal back to the main actor.
 @Observable
-final class AppRouter {
+@MainActor
+final class AppRouter: Sendable {
     /// Set by intents to request that the app open the recording sheet.
     /// ContentView clears this after consuming.
     var pendingRecordingRequest: RecordingRequest?
