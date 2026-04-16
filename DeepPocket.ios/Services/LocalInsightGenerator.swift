@@ -1,28 +1,59 @@
 import Foundation
+import OSLog
 
-struct LocalInsightGenerator {
+final class LocalInsightGenerator {
+    private var inflight: [String: Task<InsightDraft, Never>] = [:]
+    private let inflightQueue = DispatchQueue(label: "works.kaspar.deeppocket.insight.inflight")
+
     func generate(from transcript: String) async -> InsightDraft {
-        let cleanTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanTranscript.isEmpty else {
-            return InsightDraft(
-                summary: "No transcript was captured.",
-                paragraphNotes: "No transcript was captured, so DeepPocket could not generate notes.",
-                bulletSummary: [],
-                highlights: [],
-                importantLines: [],
-                quickRead: "No transcript captured.",
-                keyPoints: [],
-                decisions: [],
-                risks: [],
-                actionItems: []
-            )
+        let key = "\(transcript.count):\(transcript.hashValue)"
+
+        if let existing = inflightQueue.sync(execute: { inflight[key] }) {
+            return await existing.value
         }
 
-        #if canImport(FoundationModels)
-        return await generateWithFoundationModels(from: cleanTranscript)
-        #else
-        return generateHeuristicInsights(from: cleanTranscript)
-        #endif
+        let task = Task<InsightDraft, Never> { [weak self] in
+            guard let self else {
+                return InsightDraft(
+                    summary: "Generator unavailable.",
+                    paragraphNotes: "",
+                    bulletSummary: [],
+                    highlights: [],
+                    importantLines: [],
+                    quickRead: "",
+                    keyPoints: [],
+                    decisions: [],
+                    risks: [],
+                    actionItems: []
+                )
+            }
+            let clean = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !clean.isEmpty else {
+                return InsightDraft(
+                    summary: "No transcript was captured.",
+                    paragraphNotes: "No transcript was captured, so DeepPocket could not generate notes.",
+                    bulletSummary: [],
+                    highlights: [],
+                    importantLines: [],
+                    quickRead: "No transcript captured.",
+                    keyPoints: [],
+                    decisions: [],
+                    risks: [],
+                    actionItems: []
+                )
+            }
+
+            #if canImport(FoundationModels)
+            return await self.generateWithFoundationModels(from: clean)
+            #else
+            return self.generateHeuristicInsights(from: clean)
+            #endif
+        }
+
+        inflightQueue.sync { inflight[key] = task }
+        let result = await task.value
+        inflightQueue.sync { inflight[key] = nil }
+        return result
     }
 
     private func generateHeuristicInsights(from transcript: String) -> InsightDraft {
@@ -239,7 +270,65 @@ struct LocalInsightGenerator {
 
     #if canImport(FoundationModels)
     private func generateWithFoundationModels(from transcript: String) async -> InsightDraft {
-        generateHeuristicInsights(from: transcript)
+        let client = FoundationModelClient.shared
+        do {
+            let fm = try await client.generateInsights(from: transcript)
+            return convert(fm: fm, transcript: transcript)
+        } catch FoundationModelClient.ClientError.cancelled {
+            DeepPocketLog.ai.debug("LocalInsightGenerator: cancelled, returning heuristic fallback")
+            return generateHeuristicInsights(from: transcript)
+        } catch {
+            DeepPocketLog.ai.debug("LocalInsightGenerator: FM failed, using heuristic fallback")
+            return generateHeuristicInsights(from: transcript)
+        }
+    }
+
+    private func convert(fm: FMInsightOutput, transcript: String) -> InsightDraft {
+        let sentences = transcript
+            .components(separatedBy: CharacterSet(charactersIn: ".?!\n"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let rankedSentences = sentences.sorted { score($0) > score($1) }
+        let importantLines = Array(rankedSentences.filter { score($0) >= 3 }.prefix(8))
+        let quickRead = Array(rankedSentences.prefix(3)).joined(separator: ". ")
+
+        let actionItems = fm.actionItems.map { item in
+            ActionItemDraft(
+                title: item.title,
+                detail: item.detail,
+                owner: item.owner.isEmpty ? "Unassigned" : item.owner,
+                deadline: parseDeadline(item.deadline),
+                priority: parsePriority(item.priority),
+                confidence: .high,
+                sourceQuote: item.detail
+            )
+        }
+
+        return InsightDraft(
+            summary: fm.summary,
+            paragraphNotes: fm.paragraphNotes,
+            bulletSummary: fm.bulletSummary,
+            highlights: fm.highlights,
+            importantLines: importantLines,
+            quickRead: quickRead.isEmpty ? fm.summary : quickRead + ".",
+            keyPoints: fm.bulletSummary,
+            decisions: fm.decisions,
+            risks: fm.risks,
+            actionItems: actionItems
+        )
+    }
+
+    private func parseDeadline(_ text: String) -> Date? {
+        guard !text.isEmpty else { return nil }
+        return detectDueDate(in: text)
+    }
+
+    private func parsePriority(_ text: String) -> TaskPriority {
+        switch text.lowercased() {
+        case "high", "urgent", "critical": return .high
+        case "low", "nice to have": return .low
+        default: return .medium
+        }
     }
     #endif
 }
