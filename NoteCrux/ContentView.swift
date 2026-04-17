@@ -30,9 +30,9 @@ enum NCTab: String, CaseIterable {
         switch self {
         case .home: "Home"
         case .tasks: "Tasks"
-        case .highlights: "Highlights"
-        case .search: "Search"
-        case .profile: "Profile"
+        case .highlights: "Insights"
+        case .search: "Ask"
+        case .profile: "Settings"
         }
     }
 }

@@ -39,32 +39,52 @@ struct DashboardView: View {
             .map { $0 }
     }
 
+    private var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12: return "Good morning"
+        case 12..<17: return "Good afternoon"
+        case 17..<22: return "Good evening"
+        default: return "Good night"
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottomTrailing) {
+            ZStack {
                 Color.ncBackground
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: NCSpacing.lg + 2) {
-                        DashboardHeader()
+                    VStack(alignment: .leading, spacing: NCSpacing.xl) {
+                        // Header
+                        DashboardHeader(greeting: greeting)
 
-                        VStack(spacing: NCSpacing.md) {
-                            NCMetricCard(
-                                title: "TODAY'S MEETINGS",
+                        // Quick stats row
+                        HStack(spacing: NCSpacing.sm + 2) {
+                            MiniStatTile(
+                                icon: "calendar",
                                 value: "\(todaysMeetings.count)",
-                                isPrimary: true
+                                label: "Today",
+                                color: Color.ncPurple
                             )
-                            NCMetricCard(
-                                title: "PENDING TASKS",
+                            MiniStatTile(
+                                icon: "checklist",
                                 value: "\(pendingTasks.count)",
-                                isPrimary: false
+                                label: "Tasks",
+                                color: Color.ncWarning
                             )
-                            NCMetricCard(
-                                title: "RECENT HIGHLIGHTS",
+                            MiniStatTile(
+                                icon: "sparkles",
                                 value: "\(recentHighlightsCount)",
-                                isPrimary: false
+                                label: "Highlights",
+                                color: Color.ncSuccess
                             )
+                        }
+
+                        // Quick record CTA
+                        QuickRecordCard {
+                            isRecording = true
                         }
 
                         if let recoveredDraft {
@@ -83,59 +103,44 @@ struct DashboardView: View {
 
                         agendaSection
 
-                        HStack(alignment: .firstTextBaseline) {
-                            Text("Recent Meetings")
-                                .font(.ncTitle2)
-                                .foregroundStyle(Color.ncInk)
+                        // Recent meetings
+                        if !recentMeetings.isEmpty {
+                            VStack(alignment: .leading, spacing: NCSpacing.md) {
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text("Recent")
+                                        .font(.ncTitle2)
+                                        .foregroundStyle(Color.ncInk)
 
-                            Spacer()
+                                    Spacer()
 
-                            NavigationLink {
-                                VaultView()
-                            } label: {
-                                Text("View all")
-                                    .font(.ncCaption1.bold())
-                                    .foregroundStyle(Color.ncPurple)
-                            }
-                        }
-                        .padding(.top, 6)
+                                    NavigationLink {
+                                        VaultView()
+                                    } label: {
+                                        Text("See all")
+                                            .font(.ncCaption1.bold())
+                                            .foregroundStyle(Color.ncPurple)
+                                    }
+                                }
 
-                        if recentMeetings.isEmpty {
-                            EmptyRecentMeetingCard {
-                                isRecording = true
-                            }
-                        } else {
-                            VStack(spacing: NCSpacing.lg + 2) {
-                                ForEach(Array(recentMeetings.enumerated()), id: \.element.id) { index, meeting in
+                                ForEach(recentMeetings) { meeting in
                                     NavigationLink {
                                         InsightView(meeting: meeting)
                                     } label: {
-                                        MeetingPreviewCard(meeting: meeting, index: index)
+                                        MeetingListCard(meeting: meeting)
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
+                        } else {
+                            EmptyStateCard {
+                                isRecording = true
+                            }
                         }
                     }
                     .padding(.horizontal, NCSpacing.lg + 2)
-                    .padding(.top, NCSpacing.md + 2)
+                    .padding(.top, NCSpacing.md)
                     .padding(.bottom, 94)
                 }
-
-                Button {
-                    isRecording = true
-                } label: {
-                    Label("Record Meeting", systemImage: "mic.fill")
-                        .font(.ncCallout.bold())
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, NCSpacing.lg + 2)
-                        .padding(.vertical, NCSpacing.md + 1)
-                        .background(Color.ncPurple, in: Capsule())
-                        .shadow(color: Color.ncPurple.opacity(0.25), radius: 14, y: 8)
-                }
-                .padding(.trailing, NCSpacing.lg + 2)
-                .padding(.bottom, NCSpacing.lg)
-                .accessibilityLabel("Record meeting")
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
@@ -145,6 +150,8 @@ struct DashboardView: View {
             await calendarService.refresh()
         }
     }
+
+    // MARK: - Data Actions
 
     private func loadDraft() {
         guard let data = UserDefaults.standard.data(forKey: draftKey),
@@ -234,8 +241,7 @@ struct DashboardView: View {
                 EmptyView()
             } else {
                 VStack(alignment: .leading, spacing: NCSpacing.md) {
-                    Text("Today's agenda")
-                        .font(.ncHeadline)
+                    NCSectionHeader(title: "TODAY'S AGENDA")
                     if calendarService.todaysEvents.isEmpty {
                         Text("No events today.")
                             .font(.ncFootnote)
@@ -256,8 +262,8 @@ struct DashboardView: View {
                     }
                 }
                 .padding(NCSpacing.lg)
-                .background(Color.ncSurfaceElevated)
-                .clipShape(RoundedRectangle(cornerRadius: NCRadius.medium))
+                .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+                .ncShadow(.subtle)
             }
         case .denied:
             calendarDeniedCard
@@ -283,9 +289,9 @@ struct DashboardView: View {
                 }
                 Spacer()
                 Image(systemName: "mic.circle.fill")
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(Color.ncPurple)
             }
-            .padding(.vertical, 6)
+            .padding(.vertical, NCSpacing.sm)
         }
         .buttonStyle(.plain)
     }
@@ -310,8 +316,8 @@ struct DashboardView: View {
             }
         }
         .padding(NCSpacing.lg)
-        .background(Color.ncSurfaceElevated)
-        .clipShape(RoundedRectangle(cornerRadius: NCRadius.medium))
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.subtle)
     }
 
     private static let timeFormatter: DateFormatter = {
@@ -329,50 +335,120 @@ struct DashboardView: View {
     }
 }
 
+// MARK: - Header
+
 private struct DashboardHeader: View {
+    let greeting: String
+
     var body: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("WELCOME BACK")
-                    .font(.ncOverline)
-                    .tracking(0.8)
+        VStack(alignment: .leading, spacing: NCSpacing.xs) {
+            HStack {
+                Text("NoteCrux")
+                    .font(.ncCaption2)
+                    .tracking(1.2)
+                    .foregroundStyle(Color.ncPurple)
+
+                Spacer()
+
+                Text(Date.now.formatted(date: .abbreviated, time: .omitted))
+                    .font(.ncCaption1)
                     .foregroundStyle(Color.ncMuted)
-
-                Text("Good morning,")
-                    .font(.ncTitle3)
-                    .foregroundStyle(Color.ncInk)
-
-                Text("Bistro")
-                    .font(.ncTitle3)
-                    .foregroundStyle(Color.ncInk)
             }
 
-            Spacer()
-
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.ncPurple, Color(red: 0.98, green: 0.70, blue: 0.28)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                Text("B")
-                    .font(.ncCallout.bold())
-                    .foregroundStyle(.white)
-            }
-            .frame(width: 33, height: 33)
-            .overlay(Circle().stroke(.white, lineWidth: 2))
-            .ncShadow(.subtle)
+            Text(greeting)
+                .font(.ncLargeTitle)
+                .foregroundStyle(Color.ncInk)
         }
+        .padding(.top, NCSpacing.sm)
     }
 }
 
-private struct MeetingPreviewCard: View {
+// MARK: - Mini Stat Tiles
+
+private struct MiniStatTile: View {
+    let icon: String
+    let value: String
+    let label: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: NCSpacing.sm) {
+            HStack(spacing: NCSpacing.sm) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(color)
+
+                Text(value)
+                    .font(.ncTitle2)
+                    .foregroundStyle(Color.ncInk)
+            }
+
+            Text(label.uppercased())
+                .font(.ncOverline)
+                .tracking(0.6)
+                .foregroundStyle(Color.ncMuted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, NCSpacing.md + 2)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.subtle)
+    }
+}
+
+// MARK: - Quick Record CTA
+
+private struct QuickRecordCard: View {
+    let start: () -> Void
+
+    var body: some View {
+        Button(action: start) {
+            HStack(spacing: NCSpacing.lg) {
+                ZStack {
+                    Circle()
+                        .fill(Color.ncPurple)
+                        .frame(width: 48, height: 48)
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Start Recording")
+                        .font(.ncHeadline)
+                        .foregroundStyle(Color.ncInk)
+                    Text("Tap to capture your next meeting")
+                        .font(.ncFootnote)
+                        .foregroundStyle(Color.ncMuted)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.ncMuted)
+            }
+            .padding(NCSpacing.lg)
+            .background(
+                LinearGradient(
+                    colors: [Color.ncPurple.opacity(0.08), Color.ncSurface],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                ),
+                in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous)
+                    .strokeBorder(Color.ncPurple.opacity(0.15), lineWidth: 1)
+            )
+        }
+        .buttonStyle(NCPressButtonStyle())
+    }
+}
+
+// MARK: - Meeting List Card
+
+private struct MeetingListCard: View {
     let meeting: Meeting
-    let index: Int
 
     private var excerpt: String {
         let candidates = [
@@ -384,9 +460,9 @@ private struct MeetingPreviewCard: View {
 
         let text = candidates
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .first { !$0.isEmpty } ?? "No notes yet. Open this meeting to review transcript and AI output."
+            .first { !$0.isEmpty } ?? "No notes yet."
 
-        return text.count > 112 ? String(text.prefix(109)) + "..." : text
+        return text.count > 100 ? String(text.prefix(97)) + "..." : text
     }
 
     private var chips: [String] {
@@ -398,181 +474,94 @@ private struct MeetingPreviewCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            MeetingThumbnail(index: index)
-                .frame(height: 156)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        VStack(alignment: .leading, spacing: NCSpacing.sm + 2) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: NCSpacing.xs) {
+                    Text(meeting.title)
+                        .font(.ncHeadline)
+                        .foregroundStyle(Color.ncInk)
+                        .lineLimit(1)
 
-            VStack(alignment: .leading, spacing: NCSpacing.sm) {
-                Text("\(meeting.createdAt.dashboardDate)  •  \(meeting.duration.dashboardDuration)")
-                    .font(.ncOverline)
-                    .tracking(0.6)
+                    Text("\(meeting.createdAt.dashboardDate)  ·  \(meeting.duration.dashboardDuration)")
+                        .font(.ncCaption1)
+                        .foregroundStyle(Color.ncMuted)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Color.ncMuted)
+                    .padding(.top, 4)
+            }
 
-                Text(meeting.title)
-                    .font(.ncHeadline)
-                    .foregroundStyle(Color.ncInk)
-                    .lineLimit(1)
+            Text(excerpt)
+                .font(.ncFootnote)
+                .lineSpacing(2)
+                .foregroundStyle(Color.ncSecondary)
+                .lineLimit(2)
 
-                Text(excerpt)
-                    .font(.ncFootnote)
-                    .lineSpacing(2)
-                    .foregroundStyle(Color.ncSecondary)
-                    .lineLimit(3)
-
-                HStack(spacing: 7) {
+            if !chips.isEmpty {
+                HStack(spacing: NCSpacing.sm) {
                     ForEach(chips, id: \.self) { chip in
-                        NCChip(label: chip, color: chipColor(chip))
+                        Text(chip)
+                            .font(.ncCaption2)
+                            .foregroundStyle(Color.ncPurple)
+                            .padding(.horizontal, NCSpacing.sm)
+                            .padding(.vertical, NCSpacing.xs)
+                            .background(Color.ncPurple.opacity(0.10), in: Capsule())
                     }
                 }
             }
-            .padding(NCSpacing.md + 2)
         }
-        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
-        .ncShadow(.card)
-    }
-
-    private func chipColor(_ chip: String) -> Color {
-        let colors: [Color] = [
-            .ncPurple,
-            Color(red: 0.20, green: 0.53, blue: 0.83),
-            Color(red: 0.84, green: 0.33, blue: 0.31),
-            Color(red: 0.14, green: 0.56, blue: 0.43)
-        ]
-        let sum = chip.unicodeScalars.reduce(0) { $0 + Int($1.value) }
-        return colors[sum % colors.count]
-    }
-}
-
-private struct MeetingThumbnail: View {
-    let index: Int
-
-    private var palette: [Color] {
-        let palettes: [[Color]] = [
-            [Color(red: 0.10, green: 0.18, blue: 0.20), Color(red: 0.83, green: 0.91, blue: 0.91)],
-            [Color(red: 0.77, green: 0.70, blue: 0.55), Color(red: 0.96, green: 0.95, blue: 0.80)],
-            [Color(red: 0.11, green: 0.33, blue: 0.38), Color(red: 0.92, green: 0.86, blue: 0.70)],
-            [Color(red: 0.21, green: 0.28, blue: 0.30), Color(red: 0.76, green: 0.87, blue: 0.93)]
-        ]
-        return palettes[index % palettes.count]
-    }
-
-    var body: some View {
-        GeometryReader { proxy in
-            ZStack {
-                LinearGradient(colors: palette, startPoint: .topLeading, endPoint: .bottomTrailing)
-
-                ForEach(0..<6, id: \.self) { column in
-                    Rectangle()
-                        .fill(.white.opacity(column.isMultiple(of: 2) ? 0.18 : 0.08))
-                        .frame(width: 2)
-                        .offset(x: CGFloat(column) * proxy.size.width / 6 - proxy.size.width / 2 + 20)
-                }
-
-                Rectangle()
-                    .fill(.black.opacity(0.10))
-                    .frame(height: 30)
-                    .offset(y: proxy.size.height / 2 - 20)
-
-                if index % 3 == 1 {
-                    StickyWall()
-                        .padding(NCSpacing.lg + 2)
-                } else {
-                    MeetingPeopleScene(index: index)
-                }
-            }
-        }
-    }
-}
-
-private struct MeetingPeopleScene: View {
-    let index: Int
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 42) {
-            PersonShape(color: Color(red: 0.94, green: 0.72, blue: 0.42))
-            PersonShape(color: Color(red: 0.20, green: 0.55, blue: 0.65))
-        }
-        .padding(.bottom, NCSpacing.xxl)
-        .offset(x: index.isMultiple(of: 2) ? 10 : -12)
-        .opacity(0.86)
-    }
-}
-
-private struct PersonShape: View {
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Circle()
-                .fill(color.opacity(0.95))
-                .frame(width: 15, height: 15)
-
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(color)
-                .frame(width: 30, height: 42)
-        }
-        .shadow(color: .black.opacity(0.18), radius: 7, y: 3)
-    }
-}
-
-private struct StickyWall: View {
-    private let notes: [Color] = [
-        .pink, .yellow, .green, .orange, .cyan, .yellow, .pink, .green, .orange
-    ]
-
-    var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 7), count: 3), spacing: 7) {
-            ForEach(Array(notes.enumerated()), id: \.offset) { offset, color in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(color.opacity(0.72))
-                    .frame(height: 22)
-                    .rotationEffect(.degrees(Double((offset % 3) - 1) * 5))
-            }
-        }
-        .frame(width: 118)
         .padding(NCSpacing.lg)
-        .background(.white.opacity(0.36), in: Circle())
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.subtle)
     }
 }
 
-private struct EmptyRecentMeetingCard: View {
+// MARK: - Empty State
+
+private struct EmptyStateCard: View {
     let startRecording: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            MeetingThumbnail(index: 0)
-                .frame(height: 156)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .opacity(0.70)
+        VStack(spacing: NCSpacing.lg) {
+            Image(systemName: "waveform.circle")
+                .font(.system(size: 44, weight: .light))
+                .foregroundStyle(Color.ncPurple.opacity(0.5))
 
-            VStack(alignment: .leading, spacing: NCSpacing.sm) {
-                Text("NO MEETINGS YET")
-                    .font(.ncOverline)
-                    .tracking(0.6)
-                    .foregroundStyle(Color.ncMuted)
-
-                Text("Start your first meeting")
+            VStack(spacing: NCSpacing.sm) {
+                Text("No meetings yet")
                     .font(.ncHeadline)
                     .foregroundStyle(Color.ncInk)
 
-                Text("Record locally, transcribe offline, then turn the transcript into notes and tasks.")
+                Text("Record your first meeting to get AI-powered notes, summaries, and action items.")
                     .font(.ncFootnote)
                     .foregroundStyle(Color.ncSecondary)
-                    .lineLimit(3)
-
-                Button(action: startRecording) {
-                    Text("Record now")
-                        .font(.ncCaption1.bold())
-                        .foregroundStyle(Color.ncPurple)
-                }
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 260)
             }
-            .padding(NCSpacing.md + 2)
+
+            Button(action: startRecording) {
+                Text("Record now")
+                    .font(.ncCallout.bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, NCSpacing.xxl)
+                    .padding(.vertical, NCSpacing.md)
+                    .background(Color.ncPurple, in: Capsule())
+            }
+            .buttonStyle(NCPressButtonStyle())
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, NCSpacing.xxxl)
+        .padding(.horizontal, NCSpacing.lg)
         .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
-        .ncShadow(.card)
+        .ncShadow(.subtle)
     }
 }
+
+// MARK: - Follow-Up Strip
 
 private struct FollowUpStrip: View {
     let items: [MeetingActionItem]
@@ -611,6 +600,8 @@ private struct FollowUpStrip: View {
     }
 }
 
+// MARK: - Recovery Card
+
 private struct RecoveryCard: View {
     let draft: RecordingDraft
     let recover: () -> Void
@@ -645,6 +636,8 @@ private struct RecoveryCard: View {
         .ncShadow(.subtle)
     }
 }
+
+// MARK: - Formatters
 
 private extension Date {
     var dashboardDate: String {

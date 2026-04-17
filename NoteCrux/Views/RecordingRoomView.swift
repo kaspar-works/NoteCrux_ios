@@ -73,26 +73,26 @@ struct RecordingRoomView: View {
                             .foregroundStyle(Color.ncInk)
                             .padding(.top, NCSpacing.lg + 2)
 
-                        MiniWaveform(level: recorder.audioLevel)
-                            .frame(width: 104, height: 42)
-                            .padding(.top, 86)
-
                         ZStack {
                             Circle()
-                                .fill(Color.ncPurple.opacity(0.10))
-                                .frame(width: 190, height: 190)
+                                .fill(Color.ncPurple.opacity(0.08))
+                                .frame(width: 160, height: 160)
                             Circle()
-                                .fill(Color.ncPurple.opacity(0.22))
-                                .frame(width: 164, height: 164)
+                                .fill(Color.ncPurple.opacity(0.18))
+                                .frame(width: 130, height: 130)
                             Circle()
-                                .fill(Color.ncPurple.opacity(0.42))
-                                .frame(width: 146, height: 146)
+                                .fill(Color.ncPurple.opacity(0.38))
+                                .frame(width: 108, height: 108)
 
                             Image(systemName: "mic.fill")
-                                .font(.system(size: 42, weight: .semibold))
+                                .font(.system(size: 36, weight: .semibold))
                                 .foregroundStyle(.white)
                         }
-                        .padding(.top, NCSpacing.xxl)
+                        .padding(.top, NCSpacing.xxxl)
+
+                        MiniWaveform(level: recorder.audioLevel)
+                            .frame(width: 120, height: 36)
+                            .padding(.top, NCSpacing.lg)
 
                         VStack(spacing: NCSpacing.md) {
                             LiveInsightsCard(
@@ -118,7 +118,7 @@ struct RecordingRoomView: View {
                                 )
                             }
                         }
-                        .padding(.top, 64)
+                        .padding(.top, NCSpacing.xxl)
 
                         if let message = recorder.authorizationMessage {
                             Text(message)
@@ -332,7 +332,7 @@ private struct RecordingHeader: View {
                 .buttonStyle(NCPressButtonStyle())
             }
 
-            Text("STRATEGY SYNC SESSION")
+            Text(title.uppercased())
                 .font(.ncCallout.bold())
                 .tracking(4.0)
                 .foregroundStyle(Color.ncInk)

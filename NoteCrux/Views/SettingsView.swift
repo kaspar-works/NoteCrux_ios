@@ -44,7 +44,7 @@ struct SettingsView: View {
                             NCSectionHeader(title: "SECURITY & PRIVACY")
                                 .padding(.horizontal, NCSpacing.md)
 
-                            ProfileCard {
+                            ProfileCard(spacing: 0) {
                                 ProfileToggleRow(
                                     icon: "faceid",
                                     iconColor: .ncPurple,
@@ -52,6 +52,46 @@ struct SettingsView: View {
                                     subtitle: "Use Face ID to secure NoteCrux",
                                     isOn: $appLockEnabled
                                 )
+
+                                ProfileDivider()
+
+                                NavigationLink {
+                                    PINSetupView(
+                                        pinHash: $pinHash,
+                                        statusMessage: $statusMessage
+                                    )
+                                } label: {
+                                    ProfileDisclosureRow(
+                                        icon: "lock.fill",
+                                        iconColor: Color.ncWarning,
+                                        title: "Set PIN",
+                                        value: pinHash.isEmpty ? "Not set" : "Active"
+                                    )
+                                }
+                                .buttonStyle(.plain)
+
+                                if !pinHash.isEmpty {
+                                    ProfileDivider()
+
+                                    Button {
+                                        pinHash = ""
+                                        statusMessage = "PIN removed."
+                                    } label: {
+                                        HStack(spacing: 14) {
+                                            ProfileIcon(icon: "lock.slash.fill", color: Color.ncDanger)
+
+                                            Text("Remove PIN")
+                                                .font(.ncHeadline)
+                                                .foregroundStyle(Color.ncDanger)
+
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, NCSpacing.lg)
+                                        .padding(.vertical, 15)
+                                        .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
                             }
                         }
 
@@ -309,28 +349,17 @@ private struct ProfileTopBar: View {
 
 private struct ProfileIdentity: View {
     var body: some View {
-        VStack(spacing: 10) {
-            ZStack(alignment: .bottomTrailing) {
-                AvatarPortrait()
-                    .frame(width: 102, height: 102)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.ncPurple, lineWidth: 4))
-                    .shadow(color: Color.ncPurple.opacity(0.18), radius: 14, y: 7)
+        VStack(spacing: NCSpacing.md) {
+            ZStack {
+                Circle()
+                    .fill(NoteCruxTheme.accentGradient)
+                    .frame(width: 80, height: 80)
+                    .ncShadow(.card)
 
-                ZStack {
-                    Circle()
-                        .fill(Color.ncPurple)
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 9, height: 9)
-                }
-                .frame(width: 25, height: 25)
-                .overlay(Circle().stroke(.white, lineWidth: 3))
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.system(size: 36, weight: .light))
+                    .foregroundStyle(.white.opacity(0.9))
             }
-
-            Text("Alex Thompson")
-                .font(.ncTitle1)
-                .foregroundStyle(Color.ncInk)
 
             Label("LOCAL ONLY", systemImage: "lock.fill")
                 .font(.ncCaption2)
@@ -341,46 +370,6 @@ private struct ProfileIdentity: View {
                 .background(Color.ncPurple.opacity(0.09), in: Capsule())
         }
         .padding(.top, 2)
-    }
-}
-
-private struct AvatarPortrait: View {
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.02, green: 0.12, blue: 0.16),
-                    Color(red: 0.03, green: 0.40, blue: 0.38),
-                    Color(red: 0.11, green: 0.17, blue: 0.24)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            Ellipse()
-                .fill(Color(red: 0.16, green: 0.56, blue: 0.50))
-                .frame(width: 52, height: 70)
-                .offset(y: 6)
-
-            HStack(spacing: 14) {
-                Circle().fill(Color(red: 0.75, green: 0.92, blue: 0.82))
-                Circle().fill(Color(red: 0.75, green: 0.92, blue: 0.82))
-            }
-            .frame(width: 40, height: 8)
-            .offset(y: -4)
-
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color(red: 0.02, green: 0.18, blue: 0.18))
-                .frame(width: 24, height: 4)
-                .offset(y: 23)
-
-            ForEach(0..<5, id: \.self) { index in
-                Rectangle()
-                    .fill(.black.opacity(0.24))
-                    .frame(width: 3, height: 92)
-                    .offset(x: CGFloat(index - 2) * 16)
-            }
-        }
     }
 }
 
@@ -467,7 +456,7 @@ private struct ProfileDangerRow: View {
         HStack(spacing: 14) {
             ProfileIcon(icon: "trash.fill", color: Color.ncDanger)
 
-            Text("Delete Account")
+            Text("Delete All Data")
                 .font(.ncHeadline)
                 .foregroundStyle(Color.ncDanger)
 
@@ -516,7 +505,7 @@ private struct PrivacyGuaranteeCard: View {
                 .font(.ncHeadline)
                 .foregroundStyle(Color.ncInk)
 
-            Text("NoteCrux is local-first encryption. Your financial data never leaves this device without your permission.")
+            Text("NoteCrux is local-first. Your meeting data never leaves this device without your permission.")
                 .font(.ncFootnote)
                 .lineSpacing(3)
                 .multilineTextAlignment(.center)
@@ -569,6 +558,98 @@ private struct LanguageProfileSettings: View {
             }
         }
         .navigationTitle("Language")
+    }
+}
+
+private struct PINSetupView: View {
+    @Binding var pinHash: String
+    @Binding var statusMessage: String?
+    @Environment(\.dismiss) private var dismiss
+    @State private var pin = ""
+    @State private var confirmPIN = ""
+    @State private var error: String?
+
+    var body: some View {
+        ZStack {
+            Color.ncBackground.ignoresSafeArea()
+
+            VStack(spacing: NCSpacing.xxl) {
+                VStack(spacing: NCSpacing.sm) {
+                    Image(systemName: "lock.shield.fill")
+                        .font(.system(size: 40, weight: .light))
+                        .foregroundStyle(Color.ncPurple)
+
+                    Text("Set a PIN")
+                        .font(.ncTitle1)
+                        .foregroundStyle(Color.ncInk)
+
+                    Text("This PIN is used as a fallback when Face ID is unavailable.")
+                        .font(.ncFootnote)
+                        .foregroundStyle(Color.ncMuted)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 280)
+                }
+                .padding(.top, NCSpacing.xxxl)
+
+                VStack(spacing: NCSpacing.lg) {
+                    SecureField("Enter PIN (min 4 digits)", text: $pin)
+                        .keyboardType(.numberPad)
+                        .textContentType(.newPassword)
+                        .font(.ncBody)
+                        .padding(NCSpacing.md)
+                        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.small))
+                        .ncShadow(.subtle)
+
+                    SecureField("Confirm PIN", text: $confirmPIN)
+                        .keyboardType(.numberPad)
+                        .textContentType(.newPassword)
+                        .font(.ncBody)
+                        .padding(NCSpacing.md)
+                        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.small))
+                        .ncShadow(.subtle)
+                }
+                .frame(maxWidth: 300)
+
+                if let error {
+                    Text(error)
+                        .font(.ncCaption1)
+                        .foregroundStyle(Color.ncDanger)
+                }
+
+                Button {
+                    savePIN()
+                } label: {
+                    Text("Save PIN")
+                        .font(.ncCallout.bold())
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: 300)
+                        .padding(.vertical, NCSpacing.md)
+                        .background(Color.ncPurple, in: RoundedRectangle(cornerRadius: NCRadius.small))
+                }
+                .buttonStyle(NCPressButtonStyle())
+                .disabled(pin.count < 4)
+                .opacity(pin.count < 4 ? 0.5 : 1)
+
+                Spacer()
+            }
+            .padding(.horizontal, NCSpacing.xxl)
+        }
+        .navigationTitle("PIN Setup")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func savePIN() {
+        guard pin.count >= 4 else {
+            error = "PIN must be at least 4 digits."
+            return
+        }
+        guard pin == confirmPIN else {
+            error = "PINs don't match."
+            return
+        }
+        pinHash = AppSecurity.hashPIN(pin)
+        statusMessage = "PIN saved."
+        dismiss()
     }
 }
 
