@@ -162,3 +162,26 @@ enum MeetingImportance: String, Codable, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 }
+
+extension Meeting {
+    /// Resolves `audioFilePath` (filename for new recordings, absolute path for
+    /// legacy records) to a URL in the current app container. The app's
+    /// Documents directory UUID changes across updates/reinstalls, so absolute
+    /// paths saved previously can become invalid; fall back to the filename.
+    var audioFileURL: URL? {
+        guard let stored = audioFilePath, !stored.isEmpty else { return nil }
+        if stored.hasPrefix("/") {
+            if FileManager.default.fileExists(atPath: stored) {
+                return URL(fileURLWithPath: stored)
+            }
+            let filename = (stored as NSString).lastPathComponent
+            return Meeting.recordingsFolder?.appendingPathComponent(filename)
+        }
+        return Meeting.recordingsFolder?.appendingPathComponent(stored)
+    }
+
+    static var recordingsFolder: URL? {
+        guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return nil }
+        return docs.appendingPathComponent("Recordings", isDirectory: true)
+    }
+}

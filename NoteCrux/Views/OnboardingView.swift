@@ -94,11 +94,11 @@ private struct OnboardingPageView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer(minLength: NCSpacing.xxl)
+            Spacer(minLength: NCSpacing.xl)
 
             page.hero
-                .frame(height: 200)
-                .padding(.bottom, NCSpacing.xxxl + 6)
+                .frame(height: 180)
+                .padding(.bottom, NCSpacing.xxl)
 
             VStack(spacing: NCSpacing.md + 1) {
                 Text(page.title)
@@ -113,30 +113,30 @@ private struct OnboardingPageView: View {
                     .foregroundStyle(Color.ncMuted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: 290)
+                    .frame(maxWidth: 310)
             }
 
             if !page.features.isEmpty {
-                VStack(spacing: NCSpacing.md + 1) {
+                VStack(spacing: NCSpacing.md) {
                     Text(page.featureTitle)
                         .font(.ncCaption1)
                         .foregroundStyle(Color.ncInk)
-                        .padding(.top, 44)
+                        .padding(.top, NCSpacing.xxl)
 
                     Capsule()
                         .fill(Color.ncPurple)
                         .frame(width: 24, height: 3)
 
-                    VStack(spacing: NCSpacing.md + 1) {
+                    VStack(spacing: NCSpacing.sm + 2) {
                         ForEach(page.features) { feature in
                             OnboardingFeatureRow(feature: feature)
                         }
                     }
-                    .padding(.top, NCSpacing.xl)
+                    .padding(.top, NCSpacing.md)
                 }
             }
 
-            Spacer(minLength: NCSpacing.xl)
+            Spacer(minLength: NCSpacing.lg)
         }
     }
 }
@@ -188,11 +188,12 @@ private struct OnboardingProgress: View {
     }
 }
 
+// MARK: - Hero illustrations
+
 private struct WaveHero: View {
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-
             HStack(alignment: .center, spacing: 8) {
                 ForEach(0..<9, id: \.self) { index in
                     RoundedRectangle(cornerRadius: 2)
@@ -201,28 +202,50 @@ private struct WaveHero: View {
                 }
             }
             .frame(height: 150)
-
             Spacer()
         }
     }
 }
 
-private struct SecurityHero: View {
+private struct OnDeviceAIHero: View {
     var body: some View {
-        VStack(spacing: NCSpacing.xxl) {
+        ZStack {
+            Circle()
+                .fill(Color.ncPurple.opacity(0.08))
+                .frame(width: 160, height: 160)
+            Circle()
+                .fill(Color.ncPurple.opacity(0.18))
+                .frame(width: 110, height: 110)
+            Image(systemName: "cpu.fill")
+                .font(.system(size: 42, weight: .bold))
+                .foregroundStyle(Color.ncPurple)
+            // Orbiting spark
+            Image(systemName: "sparkles")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(8)
+                .background(Color.ncPurple, in: Circle())
+                .offset(x: 60, y: -50)
+        }
+    }
+}
+
+private struct PrivateVaultHero: View {
+    var body: some View {
+        VStack(spacing: NCSpacing.lg) {
             ZStack {
                 Circle()
                     .fill(Color.ncPurple.opacity(0.08))
                     .frame(width: 86, height: 86)
-                Image(systemName: "shield.lefthalf.filled")
-                    .font(.system(size: 30, weight: .bold))
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 32, weight: .bold))
                     .foregroundStyle(Color.ncPurple)
             }
 
             VStack(spacing: NCSpacing.sm) {
                 HStack(spacing: 7) {
-                    Image(systemName: "lock.fill")
-                    Text("SECURE STORAGE")
+                    Image(systemName: "iphone")
+                    Text("ON THIS DEVICE")
                 }
                 .font(.ncOverline)
                 .tracking(0.8)
@@ -237,9 +260,36 @@ private struct SecurityHero: View {
                 }
             }
             .padding(NCSpacing.lg)
-            .frame(width: 190)
+            .frame(width: 200)
             .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
             .ncShadow(.subtle)
+        }
+    }
+}
+
+private struct ActionItemsHero: View {
+    var body: some View {
+        VStack(spacing: NCSpacing.sm) {
+            ForEach(0..<3, id: \.self) { idx in
+                HStack(spacing: NCSpacing.md) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.ncPurple.opacity(idx == 0 ? 1.0 : 0.3))
+                        .font(.system(size: 20, weight: .bold))
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.ncMuted.opacity(0.25))
+                        .frame(width: [140, 120, 90][idx], height: 6)
+                    Spacer()
+                    if idx < 2 {
+                        Image(systemName: "calendar")
+                            .foregroundStyle(Color.ncPurple)
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                }
+                .padding(.horizontal, NCSpacing.lg)
+                .padding(.vertical, NCSpacing.md)
+                .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous))
+                .frame(width: 240)
+            }
         }
     }
 }
@@ -247,33 +297,23 @@ private struct SecurityHero: View {
 private struct RecorderHero: View {
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous)
-                .fill(Color.ncSurface)
-                .frame(width: 166, height: 122)
-                .ncShadow(.elevated)
-
-            RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color(red: 1.0, green: 0.40, blue: 0.20), Color(red: 0.95, green: 0.18, blue: 0.12)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 98, height: 82)
-
-            ZStack {
-                Circle()
-                    .fill(Color.ncSurface.opacity(0.86))
-                    .frame(width: 42, height: 42)
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(Color.ncMuted)
-            }
-            .offset(x: 22, y: 14)
+            Circle()
+                .fill(Color.ncPurple.opacity(0.08))
+                .frame(width: 140, height: 140)
+            Circle()
+                .fill(Color.ncPurple.opacity(0.18))
+                .frame(width: 100, height: 100)
+            Circle()
+                .fill(Color.ncPurple)
+                .frame(width: 72, height: 72)
+            Image(systemName: "mic.fill")
+                .font(.system(size: 30, weight: .bold))
+                .foregroundStyle(.white)
         }
     }
 }
+
+// MARK: - Page data
 
 private struct OnboardingPage {
     let title: String
@@ -286,31 +326,61 @@ private struct OnboardingPage {
 
     static let pages: [OnboardingPage] = [
         OnboardingPage(
-            title: "Your private AI\nmeeting assistant",
-            subtitle: "Summarize spoken conversations without anything ever touching our cloud.",
+            title: "Record any\nconversation",
+            subtitle: "Capture meetings, calls, interviews, or quick voice notes. NoteCrux turns them into searchable notes instantly.",
             buttonTitle: "Next",
-            featureTitle: "Features",
+            featureTitle: "What you get",
             features: [
-                OnboardingFeature(icon: "doc.text.fill", title: "Record, summarize, act", subtitle: "Capture meetings and notes locally"),
-                OnboardingFeature(icon: "sparkles", title: "Instant summaries", subtitle: "Extract key insights and action items"),
-                OnboardingFeature(icon: "calendar.badge.clock", title: "Action items", subtitle: "Tasks, due dates, and owners")
+                OnboardingFeature(icon: "waveform", title: "High-quality recording", subtitle: "Start and stop with one tap"),
+                OnboardingFeature(icon: "doc.text.fill", title: "Live transcript", subtitle: "See every word as it's spoken"),
+                OnboardingFeature(icon: "sparkles", title: "AI summaries", subtitle: "Highlights and decisions, auto-extracted")
             ],
             isFinal: false,
             hero: AnyView(WaveHero())
         ),
         OnboardingPage(
-            title: "Your Voice, Your\nDevice",
-            subtitle: "Everything stays on your device. No bots. No cloud. 0% cloud.",
-            buttonTitle: "Understand & Continue",
-            featureTitle: "Security",
-            features: [],
+            title: "Powered by\non-device AI",
+            subtitle: "Transcripts and summaries are generated right on your iPhone using Apple Intelligence Foundation Models. No internet required after setup.",
+            buttonTitle: "Next",
+            featureTitle: "How it works",
+            features: [
+                OnboardingFeature(icon: "cpu.fill", title: "Apple Foundation Models", subtitle: "Apple's on-device LLM runs the AI"),
+                OnboardingFeature(icon: "wifi.slash", title: "No cloud processing", subtitle: "Audio never leaves your phone"),
+                OnboardingFeature(icon: "bolt.fill", title: "Works offline", subtitle: "Record anywhere, no signal needed")
+            ],
             isFinal: false,
-            hero: AnyView(SecurityHero())
+            hero: AnyView(OnDeviceAIHero())
         ),
         OnboardingPage(
-            title: "Ready to capture\nthe conversation?",
-            subtitle: "Join NoteCrux for a premium meeting experience.",
-            buttonTitle: "Get Started",
+            title: "Your notes stay\nwith you",
+            subtitle: "Everything — recordings, transcripts, summaries, tasks — is stored locally on your device. We have no servers that hold your data.",
+            buttonTitle: "Next",
+            featureTitle: "Where your data lives",
+            features: [
+                OnboardingFeature(icon: "iphone", title: "Stored on this device", subtitle: "In NoteCrux's private SwiftData store"),
+                OnboardingFeature(icon: "lock.shield.fill", title: "Face ID protected", subtitle: "Optional app lock for extra privacy"),
+                OnboardingFeature(icon: "xmark.icloud", title: "Zero accounts, zero tracking", subtitle: "No sign-in, no analytics pipelines")
+            ],
+            isFinal: false,
+            hero: AnyView(PrivateVaultHero())
+        ),
+        OnboardingPage(
+            title: "Turn talk into\ntasks",
+            subtitle: "After each meeting, NoteCrux surfaces action items and lets you add them to your calendar — so nothing falls through the cracks.",
+            buttonTitle: "Next",
+            featureTitle: "After every meeting",
+            features: [
+                OnboardingFeature(icon: "checkmark.circle.fill", title: "Auto-extracted action items", subtitle: "Who's doing what, by when"),
+                OnboardingFeature(icon: "calendar.badge.plus", title: "One-tap calendar scheduling", subtitle: "Add follow-ups to your calendar"),
+                OnboardingFeature(icon: "bell.badge.fill", title: "Task reminders", subtitle: "Get nudged at the right time")
+            ],
+            isFinal: false,
+            hero: AnyView(ActionItemsHero())
+        ),
+        OnboardingPage(
+            title: "Ready when\nyou are",
+            subtitle: "Every feature is free. A single ad shows between meetings — remove it anytime for $4.99 in Settings.",
+            buttonTitle: "Start Recording",
             featureTitle: "",
             features: [],
             isFinal: true,

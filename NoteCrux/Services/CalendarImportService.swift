@@ -75,7 +75,7 @@ final class CalendarImportService: ObservableObject {
 
         events = raw.map { event in
             CalendarEventSummary(
-                id: event.eventIdentifier,
+                id: "\(event.eventIdentifier):\(event.startDate.timeIntervalSince1970)",
                 title: event.title ?? "Untitled event",
                 startDate: event.startDate,
                 endDate: event.endDate,
@@ -85,6 +85,48 @@ final class CalendarImportService: ObservableObject {
         }
 
         NoteCruxLog.calendar.debug("CalendarImport: loaded \(self.events.count) events")
+    }
+
+    /// Creates a new event in the user's default calendar. Returns the
+    /// created event's identifier on success, nil if authorization is
+    /// missing or the save fails.
+    @discardableResult
+    func createEvent(
+        title: String,
+        startDate: Date,
+        durationMinutes: Int = 30,
+        notes: String? = nil
+    ) async -> String? {
+        await requestAccessIfNeeded()
+        guard authorizationState == .granted else { return nil }
+
+        let event = EKEvent(eventStore: store)
+        event.title = title
+        event.startDate = startDate
+        event.endDate = startDate.addingTimeInterval(TimeInterval(durationMinutes) * 60)
+        event.notes = notes
+        event.calendar = store.defaultCalendarForNewEvents
+
+        do {
+            try store.save(event, span: .thisEvent, commit: true)
+            NoteCruxLog.calendar.debug("Created event '\(title, privacy: .public)' at \(startDate, privacy: .public)")
+            return event.eventIdentifier
+        } catch {
+            NoteCruxLog.calendar.debug("createEvent failed: \(String(describing: error), privacy: .public)")
+            return nil
+        }
+    }
+
+    /// Uses NSDataDetector to pull the first date/time reference out of a
+    /// piece of text (e.g. an action item title or detail). Returns nil
+    /// if no date was found.
+    static func detectDate(in text: String) -> Date? {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue) else {
+            return nil
+        }
+        let range = NSRange(text.startIndex..., in: text)
+        let match = detector.matches(in: text, options: [], range: range).first
+        return match?.date
     }
 
     var todaysEvents: [CalendarEventSummary] {

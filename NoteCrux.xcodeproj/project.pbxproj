@@ -6,23 +6,105 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		352E17802F9581DC0085379A /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 352E177F2F9581DC0085379A /* GoogleMobileAds */; };
+		35C64E3C2F96775200E884D6 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35C64E3B2F96775200E884D6 /* WidgetKit.framework */; };
+		35C64E3E2F96775200E884D6 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35C64E3D2F96775200E884D6 /* SwiftUI.framework */; };
+		35C64E4F2F96775500E884D6 /* NoteCruxWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 35C64E392F96775200E884D6 /* NoteCruxWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		352E17F52F9585170085379A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 35ADEEA82F910440009E4F81 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 35ADEEAF2F910440009E4F81;
+			remoteInfo = NoteCrux;
+		};
+		35C64E4D2F96775500E884D6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 35ADEEA82F910440009E4F81 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 35C64E382F96775200E884D6;
+			remoteInfo = NoteCruxWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		35C64E502F96775500E884D6 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				35C64E4F2F96775500E884D6 /* NoteCruxWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		352E17EF2F9585160085379A /* NoteCruxUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NoteCruxUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		35ADEEB02F910440009E4F81 /* NoteCrux.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoteCrux.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		35C64E392F96775200E884D6 /* NoteCruxWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NoteCruxWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		35C64E3B2F96775200E884D6 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		35C64E3D2F96775200E884D6 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		35C64E532F96775500E884D6 /* Exceptions for "NoteCruxWidgets" folder in "NoteCruxWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 35C64E382F96775200E884D6 /* NoteCruxWidgetsExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		352E17F02F9585170085379A /* NoteCruxUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = NoteCruxUITests;
+			sourceTree = "<group>";
+		};
 		35ADEEB22F910440009E4F81 /* NoteCrux */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NoteCrux;
 			sourceTree = "<group>";
 		};
+		35C64E3F2F96775200E884D6 /* NoteCruxWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				35C64E532F96775500E884D6 /* Exceptions for "NoteCruxWidgets" folder in "NoteCruxWidgetsExtension" target */,
+			);
+			path = NoteCruxWidgets;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		352E17EC2F9585160085379A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35ADEEAD2F910440009E4F81 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				352E17802F9581DC0085379A /* GoogleMobileAds in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		35C64E362F96775200E884D6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				35C64E3E2F96775200E884D6 /* SwiftUI.framework in Frameworks */,
+				35C64E3C2F96775200E884D6 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -33,6 +115,9 @@
 			isa = PBXGroup;
 			children = (
 				35ADEEB22F910440009E4F81 /* NoteCrux */,
+				352E17F02F9585170085379A /* NoteCruxUITests */,
+				35C64E3F2F96775200E884D6 /* NoteCruxWidgets */,
+				35C64E3A2F96775200E884D6 /* Frameworks */,
 				35ADEEB12F910440009E4F81 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,13 +126,47 @@
 			isa = PBXGroup;
 			children = (
 				35ADEEB02F910440009E4F81 /* NoteCrux.app */,
+				352E17EF2F9585160085379A /* NoteCruxUITests.xctest */,
+				35C64E392F96775200E884D6 /* NoteCruxWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		35C64E3A2F96775200E884D6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				35C64E3B2F96775200E884D6 /* WidgetKit.framework */,
+				35C64E3D2F96775200E884D6 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		352E17EE2F9585160085379A /* NoteCruxUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 352E17F72F9585170085379A /* Build configuration list for PBXNativeTarget "NoteCruxUITests" */;
+			buildPhases = (
+				352E17EB2F9585160085379A /* Sources */,
+				352E17EC2F9585160085379A /* Frameworks */,
+				352E17ED2F9585160085379A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				352E17F62F9585170085379A /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				352E17F02F9585170085379A /* NoteCruxUITests */,
+			);
+			name = NoteCruxUITests;
+			packageProductDependencies = (
+			);
+			productName = NoteCruxUITests;
+			productReference = 352E17EF2F9585160085379A /* NoteCruxUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		35ADEEAF2F910440009E4F81 /* NoteCrux */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 35ADEEBF2F910442009E4F81 /* Build configuration list for PBXNativeTarget "NoteCrux" */;
@@ -55,20 +174,45 @@
 				35ADEEAC2F910440009E4F81 /* Sources */,
 				35ADEEAD2F910440009E4F81 /* Frameworks */,
 				35ADEEAE2F910440009E4F81 /* Resources */,
+				35C64E502F96775500E884D6 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				35C64E4E2F96775500E884D6 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				35ADEEB22F910440009E4F81 /* NoteCrux */,
 			);
 			name = NoteCrux;
 			packageProductDependencies = (
+				352E177F2F9581DC0085379A /* GoogleMobileAds */,
 			);
 			productName = NoteCrux;
 			productReference = 35ADEEB02F910440009E4F81 /* NoteCrux.app */;
 			productType = "com.apple.product-type.application";
+		};
+		35C64E382F96775200E884D6 /* NoteCruxWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 35C64E542F96775500E884D6 /* Build configuration list for PBXNativeTarget "NoteCruxWidgetsExtension" */;
+			buildPhases = (
+				35C64E352F96775200E884D6 /* Sources */,
+				35C64E362F96775200E884D6 /* Frameworks */,
+				35C64E372F96775200E884D6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				35C64E3F2F96775200E884D6 /* NoteCruxWidgets */,
+			);
+			name = NoteCruxWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = NoteCruxWidgetsExtension;
+			productReference = 35C64E392F96775200E884D6 /* NoteCruxWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -77,11 +221,18 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1620;
+				LastSwiftUpdateCheck = 2640;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
+					352E17EE2F9585160085379A = {
+						CreatedOnToolsVersion = 26.4;
+						TestTargetID = 35ADEEAF2F910440009E4F81;
+					};
 					35ADEEAF2F910440009E4F81 = {
 						CreatedOnToolsVersion = 16.2;
+					};
+					35C64E382F96775200E884D6 = {
+						CreatedOnToolsVersion = 26.4;
 					};
 				};
 			};
@@ -94,18 +245,37 @@
 			);
 			mainGroup = 35ADEEA72F910440009E4F81;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				352E177E2F9581DC0085379A /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 35ADEEB12F910440009E4F81 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				35ADEEAF2F910440009E4F81 /* NoteCrux */,
+				352E17EE2F9585160085379A /* NoteCruxUITests */,
+				35C64E382F96775200E884D6 /* NoteCruxWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		352E17ED2F9585160085379A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35ADEEAE2F910440009E4F81 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		35C64E372F96775200E884D6 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -115,7 +285,21 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		352E17EB2F9585160085379A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		35ADEEAC2F910440009E4F81 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		35C64E352F96775200E884D6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -124,7 +308,65 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		352E17F62F9585170085379A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 35ADEEAF2F910440009E4F81 /* NoteCrux */;
+			targetProxy = 352E17F52F9585170085379A /* PBXContainerItemProxy */;
+		};
+		35C64E4E2F96775500E884D6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 35C64E382F96775200E884D6 /* NoteCruxWidgetsExtension */;
+			targetProxy = 35C64E4D2F96775500E884D6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		352E17F82F9585170085379A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = 9F5QLG25S4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codergautamyt.NoteCruxUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = NoteCrux;
+			};
+			name = Debug;
+		};
+		352E17F92F9585170085379A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = 9F5QLG25S4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codergautamyt.NoteCruxUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = NoteCrux;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		35ADEEBD2F910442009E4F81 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -159,7 +401,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 9F5QLG25S4;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -181,6 +425,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -220,7 +465,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 9F5QLG25S4;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -235,6 +482,7 @@
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -245,38 +493,22 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = NoteCrux/NoteCrux.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"NoteCrux/Preview Content\"";
-				DEVELOPMENT_TEAM = 8ARDN58Z85;
+				DEVELOPMENT_TEAM = 9F5QLG25S4;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Note Crux";
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NoteCrux can create local calendar events from your meetings when you ask it to.";
-				INFOPLIST_KEY_NSCalendarsUsageDescription = "NoteCrux can create local calendar events from your meetings when you ask it to.";
-				INFOPLIST_KEY_NSFaceIDUsageDescription = "NoteCrux uses Face ID to protect your private meeting vault.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "NoteCrux records meeting audio locally to transcribe it on this device.";
-				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "NoteCrux can add meeting tasks to Reminders when you ask it to.";
-				INFOPLIST_KEY_NSRemindersUsageDescription = "NoteCrux can add meeting tasks to Reminders when you ask it to.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "NoteCrux uses on-device speech recognition to create private meeting transcripts.";
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UIBackgroundModes = audio;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.KasparWorks.NoteCrux;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codergautamyt.NoteCrux;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
@@ -293,38 +525,22 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = NoteCrux/NoteCrux.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 3;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"NoteCrux/Preview Content\"";
-				DEVELOPMENT_TEAM = 8ARDN58Z85;
+				DEVELOPMENT_TEAM = 9F5QLG25S4;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Note Crux";
-				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NoteCrux can create local calendar events from your meetings when you ask it to.";
-				INFOPLIST_KEY_NSCalendarsUsageDescription = "NoteCrux can create local calendar events from your meetings when you ask it to.";
-				INFOPLIST_KEY_NSFaceIDUsageDescription = "NoteCrux uses Face ID to protect your private meeting vault.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "NoteCrux records meeting audio locally to transcribe it on this device.";
-				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "NoteCrux can add meeting tasks to Reminders when you ask it to.";
-				INFOPLIST_KEY_NSRemindersUsageDescription = "NoteCrux can add meeting tasks to Reminders when you ask it to.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "NoteCrux uses on-device speech recognition to create private meeting transcripts.";
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
-				INFOPLIST_KEY_UIBackgroundModes = audio;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
-				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.KasparWorks.NoteCrux;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codergautamyt.NoteCrux;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
@@ -335,9 +551,83 @@
 			};
 			name = Release;
 		};
+		35C64E512F96775500E884D6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = 9F5QLG25S4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NoteCruxWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = NoteCruxWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codergautamyt.NoteCrux.LiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		35C64E522F96775500E884D6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = 9F5QLG25S4;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NoteCruxWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = NoteCruxWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.codergautamyt.NoteCrux.LiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		352E17F72F9585170085379A /* Build configuration list for PBXNativeTarget "NoteCruxUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				352E17F82F9585170085379A /* Debug */,
+				352E17F92F9585170085379A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		35ADEEAB2F910440009E4F81 /* Build configuration list for PBXProject "NoteCrux" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -356,7 +646,35 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		35C64E542F96775500E884D6 /* Build configuration list for PBXNativeTarget "NoteCruxWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				35C64E512F96775500E884D6 /* Debug */,
+				35C64E522F96775500E884D6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		352E177E2F9581DC0085379A /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		352E177F2F9581DC0085379A /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 352E177E2F9581DC0085379A /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 35ADEEA82F910440009E4F81 /* Project object */;
 }

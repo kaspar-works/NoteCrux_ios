@@ -1,3 +1,4 @@
+import AVFoundation
 import OSLog
 import SwiftData
 import SwiftUI
@@ -10,8 +11,16 @@ struct InsightView: View {
     @Bindable var meeting: Meeting
     @State private var selectedTab: DetailTab = .notes
     @State private var isRegenerating = false
+    @AppStorage("focusReadingMode") private var focusReadingMode = false
+    @AppStorage("nc_aiEnabled") private var aiEnabled = true
     @State private var shareItems: [Any]? = nil
     @State private var shareError: String? = nil
+    @State private var showPaywall = false
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var isPlaying = false
+    @State private var playbackProgress: Double = 0
+    @State private var playbackTimer: Timer?
+    @State private var playbackError: String?
 
     private let insightGenerator = LocalInsightGenerator()
     private let speakerLabeler = SpeakerLabeler()
@@ -79,23 +88,47 @@ struct InsightView: View {
                             .lineLimit(3)
                             .onSubmit { save() }
 
-                        HStack(spacing: NCSpacing.xs) {
-                            ParticipantBubble(label: "👨‍💻")
-                            ParticipantBubble(label: "🎨")
-                            ParticipantBubble(label: "+\(max(1, meeting.tags.count + 1))")
+                        HStack(spacing: NCSpacing.sm) {
+                            Picker("Importance", selection: $meeting.importance) {
+                                ForEach(MeetingImportance.allCases) { level in
+                                    Text(level.rawValue.capitalized).tag(level)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .tint(meeting.importance == .critical ? Color.ncDanger : meeting.importance == .important ? Color.ncWarning : Color.ncMuted)
+                            .onChange(of: meeting.importance) { _, _ in save() }
+
+                            if !focusReadingMode {
+                                Spacer()
+                                HStack(spacing: NCSpacing.xs) {
+                                    ParticipantBubble(label: "👨‍💻")
+                                    ParticipantBubble(label: "🎨")
+                                    ParticipantBubble(label: "+\(max(1, meeting.tags.count + 1))")
+                                }
+                            }
                         }
+                    }
+
+                    // Audio playback — only show if a non-empty recording actually
+                    // exists on disk. CAF files below ~8KB are header-only (no
+                    // captured audio), which would render a broken player.
+                    if let url = meeting.audioFileURL,
+                       audioFileByteCount(at: url) >= 8192 {
+                        audioPlayerBar
                     }
 
                     DetailTabBar(selection: $selectedTab)
 
                     tabContent
 
-                    BottomMetrics(
-                        actionCount: meeting.actionItems.count,
-                        score: smartInsights.effectivenessScore
-                    )
+                    if !focusReadingMode {
+                        BottomMetrics(
+                            actionCount: meeting.actionItems.count,
+                            score: smartInsights.effectivenessScore
+                        )
 
-                    RelatedMeetingsCard(meetings: smartInsights.relatedMeetings)
+                        RelatedMeetingsCard(meetings: smartInsights.relatedMeetings)
+                    }
                 }
                 .padding(.horizontal, NCSpacing.lg)
                 .padding(.top, NCSpacing.lg)
@@ -106,16 +139,24 @@ struct InsightView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    do {
-                        shareItems = try MeetingExportService.shareItems(for: meeting)
-                    } catch {
-                        shareError = error.localizedDescription
-                        NoteCruxLog.export.debug("InsightView share failed: \(String(describing: error), privacy: .public)")
+                    if FreeLimitTracker.shared.canExport() {
+                        do {
+                            shareItems = try MeetingExportService.shareItems(for: meeting)
+                        } catch {
+                            shareError = error.localizedDescription
+                            NoteCruxLog.export.debug("InsightView share failed: \(String(describing: error), privacy: .public)")
+                        }
+                    } else {
+                        // Basic text share for free users
+                        shareItems = ["\(meeting.title)\n\n\(meeting.transcript)"]
                     }
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                 }
             }
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
         }
         .sheet(item: Binding(
             get: { shareItems.map { ShareItemsWrapper(items: $0) } },
@@ -131,6 +172,14 @@ struct InsightView: View {
         } message: {
             Text(shareError ?? "")
         }
+        .alert("Playback unavailable", isPresented: Binding(
+            get: { playbackError != nil },
+            set: { if !$0 { playbackError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(playbackError ?? "")
+        }
     }
 
     @ViewBuilder
@@ -145,7 +194,8 @@ struct InsightView: View {
                 summary: summaryText,
                 takeaways: takeaways,
                 milestones: milestones,
-                criticalInsight: criticalInsight
+                criticalInsight: criticalInsight,
+                meetingTitle: meeting.title
             )
         case .tasks:
             TasksDetailContent(items: meeting.actionItems)
@@ -160,8 +210,13 @@ struct InsightView: View {
 
     private func regenerateNotes() async {
         guard !isRegenerating else { return }
+        guard aiEnabled, FreeLimitTracker.shared.canUseAI() else {
+            showPaywall = true
+            return
+        }
         isRegenerating = true
         let insights = await insightGenerator.generate(from: meeting.transcript)
+        FreeLimitTracker.shared.recordAIInsightUsed()
 
         meeting.summary = insights.summary
         meeting.paragraphNotes = insights.paragraphNotes
@@ -194,6 +249,113 @@ struct InsightView: View {
         save()
         isRegenerating = false
     }
+
+    // MARK: - Audio Playback
+
+    private var audioPlayerBar: some View {
+        HStack(spacing: NCSpacing.md) {
+            Button {
+                togglePlayback()
+            } label: {
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.ncPurple)
+                    .frame(width: 36, height: 36)
+                    .background(Color.ncPurple.opacity(0.10), in: Circle())
+            }
+            .buttonStyle(.plain)
+
+            VStack(alignment: .leading, spacing: NCSpacing.xs) {
+                ProgressView(value: playbackProgress)
+                    .tint(Color.ncPurple)
+
+                HStack {
+                    Text(formatTime(audioPlayer?.currentTime ?? 0))
+                        .font(.ncCaption2)
+                        .foregroundStyle(Color.ncMuted)
+                    Spacer()
+                    // Before first tap AVAudioPlayer is nil, so fall back to the
+                    // recording's stored duration — otherwise the bar reads
+                    // "0:00 / 0:00" and looks broken. After tap, the real audio
+                    // duration wins.
+                    Text(formatTime(audioPlayer?.duration ?? meeting.duration))
+                        .font(.ncCaption2)
+                        .foregroundStyle(Color.ncMuted)
+                }
+            }
+        }
+        .padding(NCSpacing.md)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous))
+        .onDisappear {
+            stopPlayback()
+        }
+    }
+
+    private func togglePlayback() {
+        if let player = audioPlayer, player.isPlaying {
+            player.pause()
+            isPlaying = false
+            playbackTimer?.invalidate()
+            return
+        }
+
+        if audioPlayer == nil {
+            guard let url = meeting.audioFileURL else {
+                playbackError = "Audio file could not be found."
+                return
+            }
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+                try AVAudioSession.sharedInstance().setActive(true)
+                let player = try AVAudioPlayer(contentsOf: url)
+                guard player.duration > 0 else {
+                    playbackError = "This recording contains no audio and cannot be played."
+                    return
+                }
+                player.prepareToPlay()
+                audioPlayer = player
+            } catch {
+                NoteCruxLog.export.debug("Audio playback setup failed: \(error.localizedDescription)")
+                playbackError = "Could not play this recording. \(error.localizedDescription)"
+                return
+            }
+        }
+
+        audioPlayer?.play()
+        isPlaying = true
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
+            Task { @MainActor in
+                guard let player = audioPlayer else { return }
+                if player.isPlaying {
+                    playbackProgress = player.duration > 0 ? player.currentTime / player.duration : 0
+                } else {
+                    isPlaying = false
+                    playbackTimer?.invalidate()
+                }
+            }
+        }
+    }
+
+    private func audioFileByteCount(at url: URL) -> Int64 {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let size = attrs[.size] as? Int64 else { return 0 }
+        return size
+    }
+
+    private func stopPlayback() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+        isPlaying = false
+        playbackTimer?.invalidate()
+        playbackTimer = nil
+        playbackProgress = 0
+    }
+
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
 }
 
 // MARK: - MeetingDetailTopBar
@@ -205,6 +367,16 @@ private struct MeetingDetailTopBar: View {
 
     var body: some View {
         HStack(spacing: NCSpacing.sm) {
+            Button(action: back) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.ncInk)
+                    .frame(width: 36, height: 36)
+                    .background(Color.ncSurface, in: Circle())
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+
             ZStack {
                 Circle()
                     .fill(
@@ -238,18 +410,6 @@ private struct MeetingDetailTopBar: View {
             }
             .buttonStyle(.plain)
             .disabled(isRegenerating)
-        }
-        .overlay(alignment: .leading) {
-            Button(action: back) {
-                Image(systemName: "chevron.left")
-                    .font(.ncFootnote.bold())
-                    .foregroundStyle(Color.ncMuted)
-                    .frame(width: 34, height: 34)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .offset(x: -38)
-            .opacity(0)
         }
     }
 }
@@ -305,6 +465,7 @@ private struct NotesDetailContent: View {
     let takeaways: [String]
     let milestones: [String]
     let criticalInsight: String
+    var meetingTitle: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: NCSpacing.xxl) {
@@ -326,7 +487,7 @@ private struct NotesDetailContent: View {
                         .foregroundStyle(Color.ncPurple)
 
                     VStack(alignment: .leading, spacing: NCSpacing.md) {
-                        ForEach(takeaways, id: \.self) { takeaway in
+                        ForEach(Array(takeaways.enumerated()), id: \.offset) { _, takeaway in
                             HStack(alignment: .top, spacing: NCSpacing.sm) {
                                 Circle()
                                     .fill(Color.ncPurple)
@@ -351,14 +512,14 @@ private struct NotesDetailContent: View {
                     ForEach(Array(milestones.enumerated()), id: \.offset) { index, item in
                         RoadmapRow(
                             title: item,
-                            subtitle: index == 0 ? "Finalize review scheduled for July 20th" : "Sync with owner and confirm next checkpoint",
+                            subtitle: index == 0 ? "Priority item — review and confirm" : "Follow up with owner on status",
                             showsDivider: index < milestones.count - 1
                         )
                     }
                 }
             }
 
-            CriticalInsightCard(text: criticalInsight)
+            CriticalInsightCard(text: criticalInsight, meetingTitle: meetingTitle)
         }
     }
 }
@@ -431,7 +592,7 @@ private struct HighlightsDetailContent: View {
                         .foregroundStyle(Color.ncMuted)
                 }
             } else {
-                ForEach(items, id: \.self) { item in
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     NCCard {
                         HStack(alignment: .top, spacing: NCSpacing.sm) {
                             Image(systemName: "sparkles")
@@ -493,6 +654,7 @@ private struct RoadmapRow: View {
 
 private struct CriticalInsightCard: View {
     let text: String
+    var meetingTitle: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: NCSpacing.lg) {
@@ -506,17 +668,14 @@ private struct CriticalInsightCard: View {
                 .foregroundStyle(.white)
                 .lineLimit(5)
 
-            HStack(spacing: NCSpacing.sm) {
-                ParticipantBubble(label: "👤")
-                    .background(.clear)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Alex Johnson")
+            if !meetingTitle.isEmpty {
+                HStack(spacing: NCSpacing.sm) {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(meetingTitle)
                         .font(.ncCaption1.bold())
-                    Text("Design Lead")
-                        .font(.ncCaption2.weight(.medium))
-                        .opacity(0.76)
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(.white.opacity(0.8))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

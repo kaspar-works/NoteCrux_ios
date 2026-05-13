@@ -1,0 +1,455 @@
+KEY_P8       = File.expand_path("~/.appstoreconnect/AuthKey_6H4P2FCSJB.p8")
+KEY_ID       = "6H4P2FCSJB"
+ISSUER_ID    = "8e2974d6-68fc-4cc6-8d3b-26cdd0fdf69d"
+SCHEME       = "NoteCrux"
+PROJECT      = "NoteCrux.xcodeproj"
+OUTPUT_DIR   = "./build"
+IPA_NAME     = "NoteCrux.ipa"
+
+default_platform(:ios)
+
+platform :ios do
+  before_all do
+    unless File.exist?(KEY_P8)
+      UI.user_error!("Missing .p8 key at #{KEY_P8}")
+    end
+    app_store_connect_api_key(
+      key_id:       KEY_ID,
+      issuer_id:    ISSUER_ID,
+      key_filepath: KEY_P8,
+      duration:     1200,
+      in_house:     false
+    )
+  end
+
+  desc "Create the App Store Connect app record + register bundle ID"
+  lane :create_app do
+    produce(
+      app_identifier: "com.codergautamyt.NoteCrux",
+      app_name:       "NoteCrux",
+      language:       "English",
+      app_version:    "1.0",
+      sku:            "NOTECRUX-IOS-001",
+      team_id:        "9F5QLG25S4",
+      skip_devcenter: true
+    )
+  end
+
+  desc "Build a signed release IPA for App Store distribution"
+  lane :build do
+    build_app(
+      project:       PROJECT,
+      scheme:        SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: OUTPUT_DIR,
+      output_name:      IPA_NAME,
+      clean:            true,
+      destination:      "generic/platform=iOS",
+      xcargs:           "-skipPackagePluginValidation -allowProvisioningUpdates",
+      export_team_id:   "8ARDN58Z85",
+      export_options: {
+        method:          "app-store",
+        signingStyle:    "automatic",
+        teamID:          "8ARDN58Z85",
+        destination:     "export"
+      }
+    )
+  end
+
+  desc "Build + upload to TestFlight"
+  lane :beta do
+    build
+    upload_to_testflight(
+      ipa: "#{OUTPUT_DIR}/#{IPA_NAME}",
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Build + upload to App Store (metadata-only, no submit)"
+  lane :release do
+    build
+    upload_to_app_store(
+      ipa: "#{OUTPUT_DIR}/#{IPA_NAME}",
+      skip_metadata: true,
+      skip_screenshots: true,
+      submit_for_review: false,
+      precheck_include_in_app_purchases: false
+    )
+  end
+
+  desc "Upload an already-built IPA to TestFlight (skip rebuild)"
+  lane :upload_existing do
+    upload_to_testflight(
+      ipa: "#{OUTPUT_DIR}/#{IPA_NAME}",
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Create the 'NoteCrux Pro' subscription group and its monthly + yearly subscriptions (idempotent — safe to re-run)"
+  lane :setup_subscriptions do
+    require "spaceship"
+    require "net/http"
+    require "uri"
+    require "json"
+
+    bundle_id = "com.codergautamyt.NoteCrux"
+    group_ref = "NoteCrux Pro"
+
+    products = [
+      {
+        product_id:   "com.notecrux.pro.monthly",
+        reference:    "NoteCrux Pro Monthly",
+        period:       "ONE_MONTH",
+        display_name: "NoteCrux Pro Monthly",
+        description:  "Unlimited meetings, AI, tasks, export. Billed monthly.",
+        price_usd:    "4.99"
+      },
+      {
+        product_id:   "com.notecrux.pro.yearly",
+        reference:    "NoteCrux Pro Yearly",
+        period:       "ONE_YEAR",
+        display_name: "NoteCrux Pro Yearly",
+        description:  "Unlimited meetings, AI, tasks, export. Save 33%/year.",
+        price_usd:    "39.99"
+      }
+    ]
+
+    token = Spaceship::ConnectAPI::Token.create(
+      key_id:    KEY_ID,
+      issuer_id: ISSUER_ID,
+      filepath:  KEY_P8
+    )
+    Spaceship::ConnectAPI.token = token
+
+    BASE = "https://api.appstoreconnect.apple.com"
+
+    call = lambda do |method, path, body = nil|
+      uri  = URI("#{BASE}#{path}")
+      req_class = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch, delete: Net::HTTP::Delete }[method]
+      req = req_class.new(uri)
+      req["Authorization"] = "Bearer #{token.text}"
+      req["Content-Type"]  = "application/json"
+      req.body = body.to_json if body
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+      res = http.request(req)
+      parsed = res.body && !res.body.empty? ? JSON.parse(res.body) : {}
+      unless res.code.to_i.between?(200, 299)
+        msg = parsed.dig("errors", 0, "detail") || res.body
+        UI.user_error!("#{method.upcase} #{path} → #{res.code}: #{msg}")
+      end
+      parsed
+    end
+
+    UI.message "Looking up app #{bundle_id}…"
+    apps = call.call(:get, "/v1/apps?filter[bundleId]=#{bundle_id}&limit=1")
+    app_id = apps.dig("data", 0, "id")
+    UI.user_error!("App not found for bundle id #{bundle_id}") unless app_id
+    UI.success "  App ID: #{app_id}"
+
+    UI.message "Fetching subscription groups…"
+    groups_resp = call.call(:get, "/v1/apps/#{app_id}/subscriptionGroups?limit=200")
+    group = groups_resp["data"].find { |g| g.dig("attributes", "referenceName") == group_ref }
+    if group
+      UI.success "  Subscription group exists (#{group["id"]})"
+    else
+      UI.message "Creating subscription group '#{group_ref}'…"
+      resp = call.call(:post, "/v1/subscriptionGroups", {
+        data: {
+          type: "subscriptionGroups",
+          attributes: { referenceName: group_ref },
+          relationships: { app: { data: { type: "apps", id: app_id } } }
+        }
+      })
+      group = resp["data"]
+      UI.success "  Created group #{group["id"]}"
+    end
+    group_id = group["id"]
+
+    UI.message "Ensuring group localization en-US…"
+    locs = call.call(:get, "/v1/subscriptionGroups/#{group_id}/subscriptionGroupLocalizations")
+    if locs["data"].any? { |l| l.dig("attributes", "locale") == "en-US" }
+      UI.success "  en-US group localization present"
+    else
+      call.call(:post, "/v1/subscriptionGroupLocalizations", {
+        data: {
+          type: "subscriptionGroupLocalizations",
+          attributes: { name: group_ref, locale: "en-US" },
+          relationships: { subscriptionGroup: { data: { type: "subscriptionGroups", id: group_id } } }
+        }
+      })
+      UI.success "  Added en-US group localization"
+    end
+
+    products.each do |p|
+      UI.header "#{p[:reference]} (#{p[:product_id]})"
+
+      subs = call.call(:get, "/v1/subscriptionGroups/#{group_id}/subscriptions?limit=200")
+      sub = subs["data"].find { |s| s.dig("attributes", "productId") == p[:product_id] }
+      if sub
+        UI.success "  Subscription exists (#{sub["id"]})"
+      else
+        UI.message "  Creating subscription…"
+        resp = call.call(:post, "/v1/subscriptions", {
+          data: {
+            type: "subscriptions",
+            attributes: {
+              name: p[:reference],
+              productId: p[:product_id],
+              subscriptionPeriod: p[:period],
+              familySharable: false
+            },
+            relationships: {
+              group: { data: { type: "subscriptionGroups", id: group_id } }
+            }
+          }
+        })
+        sub = resp["data"]
+        UI.success "  Created #{sub["id"]}"
+      end
+      sub_id = sub["id"]
+
+      sub_locs = call.call(:get, "/v1/subscriptions/#{sub_id}/subscriptionLocalizations")
+      if sub_locs["data"].any? { |l| l.dig("attributes", "locale") == "en-US" }
+        UI.success "  en-US sub localization present"
+      else
+        UI.message "  Adding en-US localization…"
+        call.call(:post, "/v1/subscriptionLocalizations", {
+          data: {
+            type: "subscriptionLocalizations",
+            attributes: {
+              name: p[:display_name],
+              description: p[:description],
+              locale: "en-US"
+            },
+            relationships: { subscription: { data: { type: "subscriptions", id: sub_id } } }
+          }
+        })
+        UI.success "  Localization added"
+      end
+
+      prices = call.call(:get, "/v1/subscriptions/#{sub_id}/prices")
+      if prices["data"].any?
+        UI.success "  Pricing configured (#{prices["data"].size} territories)"
+      else
+        UI.message "  Finding USD $#{p[:price_usd]} price point…"
+        pp_resp = call.call(:get, "/v1/subscriptions/#{sub_id}/pricePoints?filter[territory]=USA&limit=200")
+        point = pp_resp["data"].find { |pt| pt.dig("attributes", "customerPrice") == p[:price_usd] }
+        if point.nil?
+          sample = pp_resp["data"].first(3).map { |pt| pt.dig("attributes", "customerPrice") }.inspect
+          UI.important "  $#{p[:price_usd]} not in price points list (sample: #{sample}) — configure manually"
+          next
+        end
+
+        begin
+          call.call(:post, "/v1/subscriptionPrices", {
+            data: {
+              type: "subscriptionPrices",
+              relationships: {
+                subscription:          { data: { type: "subscriptions", id: sub_id } },
+                subscriptionPricePoint:{ data: { type: "subscriptionPricePoints", id: point["id"] } },
+                territory:             { data: { type: "territories", id: "USA" } }
+              }
+            }
+          })
+          UI.success "  Price set: USD $#{p[:price_usd]}"
+        rescue FastlaneCore::Interface::FastlaneError => e
+          UI.important "  Price set failed: #{e.message}"
+          UI.important "  Likely cause: Paid Apps Agreement unsigned, or territory pricing gating. Set price manually in App Store Connect → NoteCrux Pro → #{p[:reference]} → Subscription Prices."
+        end
+      end
+    end
+
+    UI.success "Subscriptions configured."
+  end
+
+  desc "Capture App Store screenshots via UITests on iPhone 16 Pro Max + iPhone 15 Plus"
+  lane :snap do
+    capture_ios_screenshots
+  end
+
+  desc "Push captured screenshots to App Store Connect for version 1.0"
+  lane :push_screenshots do
+    upload_to_app_store(
+      app_identifier:     "com.codergautamyt.NoteCrux",
+      force:              true,
+      skip_binary_upload: true,
+      skip_metadata:      true,
+      skip_screenshots:   false,
+      overwrite_screenshots: true,
+      submit_for_review:  false,
+      precheck_include_in_app_purchases: false,
+      run_precheck_before_submit: false
+    )
+  end
+
+  desc "Create the 'Remove Ads' non-consumable IAP (idempotent)"
+  lane :create_remove_ads_iap do
+    require "spaceship"
+    require "net/http"
+    require "uri"
+    require "json"
+
+    bundle_id   = "com.codergautamyt.NoteCrux"
+    product_id  = "com.codergautamyt.NoteCrux.removeads"
+    reference   = "Remove Ads"
+    review_note = "One-time purchase that permanently removes AdMob banner and interstitial ads across the app. Trigger paywall from Settings → Remove Ads."
+
+    token = Spaceship::ConnectAPI::Token.create(
+      key_id: KEY_ID, issuer_id: ISSUER_ID, filepath: KEY_P8
+    )
+    Spaceship::ConnectAPI.token = token
+
+    base = "https://api.appstoreconnect.apple.com"
+    call = lambda do |method, path, body = nil|
+      uri  = URI("#{base}#{path}")
+      req_class = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch, delete: Net::HTTP::Delete }[method]
+      req = req_class.new(uri)
+      req["Authorization"] = "Bearer #{token.text}"
+      req["Content-Type"]  = "application/json"
+      req.body = body.to_json if body
+      http = Net::HTTP.new(uri.host, uri.port); http.use_ssl = true
+      res = http.request(req)
+      parsed = res.body && !res.body.empty? ? JSON.parse(res.body) : {}
+      unless res.code.to_i.between?(200, 299)
+        msg = parsed.dig("errors", 0, "detail") || res.body
+        UI.user_error!("#{method.upcase} #{path} → #{res.code}: #{msg}")
+      end
+      parsed
+    end
+
+    apps = call.call(:get, "/v1/apps?filter[bundleId]=#{bundle_id}&limit=1")
+    app_id = apps.dig("data", 0, "id")
+    UI.user_error!("App not found") unless app_id
+    UI.success "App ID: #{app_id}"
+
+    existing = call.call(:get, "/v1/apps/#{app_id}/inAppPurchasesV2?filter[productId]=#{product_id}&limit=10")
+    iap = existing["data"].first
+    if iap
+      UI.success "'#{product_id}' already exists (#{iap['id']})"
+    else
+      UI.message "Creating non-consumable IAP '#{product_id}'…"
+      resp = call.call(:post, "/v2/inAppPurchases", {
+        data: {
+          type: "inAppPurchases",
+          attributes: {
+            name: reference,
+            productId: product_id,
+            inAppPurchaseType: "NON_CONSUMABLE",
+            reviewNote: review_note,
+            familySharable: false
+          },
+          relationships: { app: { data: { type: "apps", id: app_id } } }
+        }
+      })
+      iap = resp["data"]
+      UI.success "Created IAP: #{iap['id']}"
+    end
+    iap_id = iap["id"]
+
+    UI.message "Ensuring en-US localization…"
+    locs = call.call(:get, "/v2/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations")
+    if locs["data"].any? { |l| l.dig("attributes", "locale") == "en-US" }
+      UI.success "  en-US localization present"
+    else
+      call.call(:post, "/v1/inAppPurchaseLocalizations", {
+        data: {
+          type: "inAppPurchaseLocalizations",
+          attributes: {
+            name: "Remove Ads",
+            description: "Permanently remove ads. One-time purchase.",
+            locale: "en-US"
+          },
+          relationships: {
+            inAppPurchaseV2: { data: { type: "inAppPurchases", id: iap_id } }
+          }
+        }
+      })
+      UI.success "  Added en-US localization"
+    end
+
+    UI.success "Remove Ads IAP ready. Set price ($4.99 USD) manually in App Store Connect once the Paid Apps Agreement is active."
+  end
+
+  desc "Delete the NoteCrux Pro subscription group and both subscriptions — pivot to ads model"
+  lane :teardown_subscriptions do
+    require "spaceship"
+    require "net/http"
+    require "uri"
+    require "json"
+
+    bundle_id = "com.codergautamyt.NoteCrux"
+    group_ref = "NoteCrux Pro"
+
+    token = Spaceship::ConnectAPI::Token.create(
+      key_id: KEY_ID, issuer_id: ISSUER_ID, filepath: KEY_P8
+    )
+    Spaceship::ConnectAPI.token = token
+
+    base = "https://api.appstoreconnect.apple.com"
+    call = lambda do |method, path, body = nil|
+      uri  = URI("#{base}#{path}")
+      req_class = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch, delete: Net::HTTP::Delete }[method]
+      req = req_class.new(uri)
+      req["Authorization"] = "Bearer #{token.text}"
+      req["Content-Type"]  = "application/json"
+      req.body = body.to_json if body
+      http = Net::HTTP.new(uri.host, uri.port); http.use_ssl = true
+      res = http.request(req)
+      parsed = res.body && !res.body.empty? ? JSON.parse(res.body) : {}
+      unless res.code.to_i.between?(200, 299)
+        msg = parsed.dig("errors", 0, "detail") || res.body
+        UI.user_error!("#{method.upcase} #{path} → #{res.code}: #{msg}")
+      end
+      parsed
+    end
+
+    apps = call.call(:get, "/v1/apps?filter[bundleId]=#{bundle_id}&limit=1")
+    app_id = apps.dig("data", 0, "id")
+    UI.user_error!("App not found") unless app_id
+
+    groups_resp = call.call(:get, "/v1/apps/#{app_id}/subscriptionGroups?limit=200")
+    group = groups_resp["data"].find { |g| g.dig("attributes", "referenceName") == group_ref }
+    if group.nil?
+      UI.success "No '#{group_ref}' group found. Nothing to delete."
+      next
+    end
+    group_id = group["id"]
+
+    subs = call.call(:get, "/v1/subscriptionGroups/#{group_id}/subscriptions?limit=200")
+    subs["data"].each do |s|
+      UI.message "Deleting subscription #{s.dig('attributes','productId')} (#{s['id']})…"
+      call.call(:delete, "/v1/subscriptions/#{s['id']}")
+    end
+
+    UI.message "Deleting group #{group_id}…"
+    call.call(:delete, "/v1/subscriptionGroups/#{group_id}")
+    UI.success "Teardown complete."
+  end
+
+  desc "Push App Store metadata (name, description, keywords, URLs, category, copyright) for the current 'Prepare for Submission' version"
+  lane :push_metadata do
+    upload_to_app_store(
+      app_identifier:   "com.codergautamyt.NoteCrux",
+      force:            true,
+      skip_binary_upload: true,
+      skip_screenshots:   true,
+      skip_metadata:      false,
+      submit_for_review:  false,
+      automatic_release:  false,
+      precheck_include_in_app_purchases: false,
+      run_precheck_before_submit: false,
+      metadata_path: "./fastlane/metadata",
+      app_review_information: {
+        first_name: "Gautam",
+        last_name: "Anand",
+        phone_number: "+1 507 271 0696",
+        email_address: "support@codergautam.dev",
+        demo_user: "",
+        demo_password: "",
+        notes: "NoteCrux is local-first — all processing happens on-device using Apple Foundation Models. No sign-in required. Every feature is free. Monetization: a single AdMob interstitial ad shown after a meeting is saved (throttled, max once per 60 seconds). A one-time $4.99 non-consumable IAP (com.codergautamyt.NoteCrux.removeads) permanently removes ads. The purchase flow is reachable from Settings → Remove Ads."
+      }
+    )
+  end
+end

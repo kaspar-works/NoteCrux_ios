@@ -33,11 +33,13 @@ Pods/
 # Carthage (not used here, but safe default)
 Carthage/Build/
 
-# fastlane (not used here, but safe default)
+# fastlane
 fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
+fastlane/README.md
+build/
 
 # Claude Code local per-project state
 .claude/settings.local.json

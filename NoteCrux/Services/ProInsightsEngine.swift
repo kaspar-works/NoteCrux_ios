@@ -16,8 +16,17 @@ struct ProInsightsEngine {
             fallbackPrefix: "Risk pattern"
         )
 
+        let themeDescriptions = themes.enumerated().map { index, theme in
+            switch index % 4 {
+            case 0: return "Recurring topic: \(theme)"
+            case 1: return "You frequently discuss \(theme)"
+            case 2: return "Common theme across meetings: \(theme)"
+            default: return "Repeated focus area: \(theme)"
+            }
+        }
+
         return KnowledgeMemorySnapshot(
-            learnedThemes: themes.map { "You keep learning about \($0)." },
+            learnedThemes: themeDescriptions,
             recurringDecisions: decisions,
             recurringRisks: risks,
             suggestedNextSteps: suggestedNextSteps(meetings: meetings, tasks: tasks),

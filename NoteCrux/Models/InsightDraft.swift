@@ -1,16 +1,16 @@
 import Foundation
 
 struct InsightDraft {
-    var summary: String
-    var paragraphNotes: String
-    var bulletSummary: [String]
-    var highlights: [String]
-    var importantLines: [String]
-    var quickRead: String
-    var keyPoints: [String]
-    var decisions: [String]
-    var risks: [String]
-    var actionItems: [ActionItemDraft]
+    var summary: String = ""
+    var paragraphNotes: String = ""
+    var bulletSummary: [String] = []
+    var highlights: [String] = []
+    var importantLines: [String] = []
+    var quickRead: String = ""
+    var keyPoints: [String] = []
+    var decisions: [String] = []
+    var risks: [String] = []
+    var actionItems: [ActionItemDraft] = []
 }
 
 struct ActionItemDraft: Identifiable {

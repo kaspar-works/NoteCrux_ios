@@ -1,26 +1,38 @@
 import AVFoundation
 import Foundation
 import Speech
+import UIKit
 
 @MainActor
 final class RecordingTranscriptionController: ObservableObject {
-    @Published var transcript = ""
+    @Published private(set) var committedTranscript = ""
+    @Published private(set) var currentSegmentText = ""
     @Published var isRecording = false
     @Published var isPaused = false
     @Published var authorizationMessage: String?
     @Published var audioLevel: CGFloat = 0
     @Published var timestampedLines: [String] = []
 
+    var transcript: String {
+        [committedTranscript, currentSegmentText]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+    }
+
     private let audioEngine = AVAudioEngine()
     private var recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private var startDate: Date?
-    private var committedTranscript = ""
     private var activeSegmentStart: TimeInterval = 0
-    private var currentSegmentText = ""
+    private var isStopping = false
     private var audioFile: AVAudioFile?
     private(set) var audioFileURL: URL?
+    private var pendingFileURL: URL?
+    private var lastRecognitionStart: Date?
+    private var recognitionMonitorTask: Task<Void, Never>?
+    private let recognitionRefreshInterval: TimeInterval = 45 * 60
 
     var elapsedTime: TimeInterval {
         guard let startDate else { return 0 }
@@ -52,13 +64,16 @@ final class RecordingTranscriptionController: ObservableObject {
         do {
             recognizer = SFSpeechRecognizer(locale: Locale(identifier: localeIdentifier))
             try configureAudioSession()
-            try prepareAudioFile()
+            try reserveRecordingURL()
             committedTranscript = transcript
             activeSegmentStart = 0
             try startSpeechRecognition()
             startDate = .now
             isRecording = true
             isPaused = false
+            UIApplication.shared.isIdleTimerDisabled = true
+            lastRecognitionStart = .now
+            startRecognitionMonitor()
         } catch {
             authorizationMessage = error.localizedDescription
             stop()
@@ -82,6 +97,7 @@ final class RecordingTranscriptionController: ObservableObject {
             activeSegmentStart = elapsedTime
             try startSpeechRecognition()
             isPaused = false
+            lastRecognitionStart = .now
         } catch {
             authorizationMessage = error.localizedDescription
         }
@@ -90,12 +106,18 @@ final class RecordingTranscriptionController: ObservableObject {
     func stop() {
         guard isRecording || audioEngine.isRunning || isPaused else { return }
 
+        isStopping = true
+        recognitionMonitorTask?.cancel()
+        recognitionMonitorTask = nil
         commitCurrentSegment()
         stopSpeechRecognition()
         isRecording = false
         isPaused = false
         audioLevel = 0
         audioFile = nil
+        isStopping = false
+        lastRecognitionStart = nil
+        UIApplication.shared.isIdleTimerDisabled = false
 
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
@@ -106,13 +128,9 @@ final class RecordingTranscriptionController: ObservableObject {
         try session.setActive(true, options: .notifyOthersOnDeactivation)
     }
 
-    private func prepareAudioFile() throws {
+    private func reserveRecordingURL() throws {
         let folderURL = try recordingsFolderURL()
-        let fileURL = folderURL.appendingPathComponent("meeting-\(UUID().uuidString).caf")
-        let format = audioEngine.inputNode.outputFormat(forBus: 0)
-        audioFile = try AVAudioFile(forWriting: fileURL, settings: format.settings)
-        audioFileURL = fileURL
-        DataProtectionService.protectFile(at: fileURL)
+        pendingFileURL = folderURL.appendingPathComponent("meeting-\(UUID().uuidString).caf")
     }
 
     private func recordingsFolderURL() throws -> URL {
@@ -136,17 +154,33 @@ final class RecordingTranscriptionController: ObservableObject {
         recognitionRequest = request
 
         let inputNode = audioEngine.inputNode
-        let format = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
+
+        // Prepare the engine so the input node reports the actual hardware
+        // format the tap will deliver. Reading the format before prepare()
+        // (e.g. while the session is still settling on iPad/voiceChat) yields
+        // a stale format; writes to AVAudioFile then silently fail and the
+        // saved .caf ends up header-only (plays back as 0:00).
+        audioEngine.prepare()
+        let format = inputNode.outputFormat(forBus: 0)
+
+        // Create the AVAudioFile on initial start using the exact format the
+        // tap will deliver. Skip on resume after pause (audioFile already open).
+        if audioFile == nil, let url = pendingFileURL {
+            audioFile = try AVAudioFile(forWriting: url, settings: format.settings)
+            audioFileURL = url
+            DataProtectionService.protectFile(at: url)
+            pendingFileURL = nil
+        }
+
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            request.append(buffer)
+            self?.recognitionRequest?.append(buffer)
             try? self?.audioFile?.write(from: buffer)
             Task { @MainActor in
                 self?.audioLevel = Self.normalizedLevel(from: buffer)
             }
         }
 
-        audioEngine.prepare()
         try audioEngine.start()
 
         recognitionTask = recognizer?.recognitionTask(with: request) { [weak self] result, error in
@@ -158,7 +192,7 @@ final class RecordingTranscriptionController: ObservableObject {
                     }
                 }
 
-                if let error {
+                if let error, self?.isStopping != true {
                     self?.authorizationMessage = error.localizedDescription
                     self?.stop()
                 }
@@ -170,18 +204,13 @@ final class RecordingTranscriptionController: ObservableObject {
         audioEngine.inputNode.removeTap(onBus: 0)
         audioEngine.stop()
         recognitionRequest?.endAudio()
-        recognitionTask?.cancel()
+        recognitionTask?.finish()
         recognitionTask = nil
         recognitionRequest = nil
     }
 
     private func updateTranscript(with partial: String) {
         currentSegmentText = partial.trimmingCharacters(in: .whitespacesAndNewlines)
-        let combined = [committedTranscript, currentSegmentText]
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n")
-        transcript = combined
     }
 
     private func commitCurrentSegment() {
@@ -212,5 +241,53 @@ final class RecordingTranscriptionController: ObservableObject {
     private static func formatTimestamp(_ duration: TimeInterval) -> String {
         let totalSeconds = Int(duration)
         return String(format: "%02d:%02d", totalSeconds / 60, totalSeconds % 60)
+    }
+
+    private func startRecognitionMonitor() {
+        recognitionMonitorTask?.cancel()
+        recognitionMonitorTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                guard let self, self.isRecording, !self.isPaused else { continue }
+                guard let last = self.lastRecognitionStart else { continue }
+                if Date().timeIntervalSince(last) >= self.recognitionRefreshInterval {
+                    self.refreshRecognition()
+                }
+            }
+        }
+    }
+
+    private func refreshRecognition() {
+        commitCurrentSegment()
+
+        recognitionRequest?.endAudio()
+        recognitionTask?.finish()
+        recognitionTask = nil
+        recognitionRequest = nil
+
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        request.requiresOnDeviceRecognition = true
+        recognitionRequest = request
+
+        currentSegmentText = ""
+        activeSegmentStart = elapsedTime
+        committedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        recognitionTask = recognizer?.recognitionTask(with: request) { [weak self] result, error in
+            Task { @MainActor in
+                if let result {
+                    self?.updateTranscript(with: result.bestTranscription.formattedString)
+                    if result.isFinal {
+                        self?.commitCurrentSegment()
+                    }
+                }
+                if error != nil, self?.isStopping != true {
+                    // Silent failure on background refresh — audio keeps recording
+                }
+            }
+        }
+
+        lastRecognitionStart = .now
     }
 }

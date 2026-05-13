@@ -1,4 +1,5 @@
 import Foundation
+import NaturalLanguage
 import OSLog
 
 final class LocalInsightGenerator {
@@ -61,21 +62,29 @@ final class LocalInsightGenerator {
     }
 
     private func generateHeuristicInsights(from transcript: String) -> InsightDraft {
-        let sentences = transcript
+        let cleaned = cleanFillers(transcript)
+        let rawSentences = cleaned
             .components(separatedBy: CharacterSet(charactersIn: ".?!\n"))
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
 
-        let rankedSentences = sentences.sorted { score($0) > score($1) }
-        let summarySentences = Array(sentences.prefix(3))
-        let paragraphNotes = makeParagraphNotes(from: sentences)
-        let bulletSummary = Array(summarySentences.prefix(5))
-        let highlights = Array(rankedSentences.prefix(5))
-        let importantLines = Array(rankedSentences.filter { score($0) >= 3 }.prefix(8))
-        let quickRead = Array(rankedSentences.prefix(3)).joined(separator: ". ")
+        let sentences = deduplicate(rawSentences)
+        let substantive = sentences.filter(isSubstantive)
+        let rankedSubstantive = substantive.sorted { score($0) > score($1) }
+
+        let topSet = Set(rankedSubstantive.prefix(3))
+        let summarySentences = sentences.filter { topSet.contains($0) }
+
+        let paragraphNotes = makeParagraphNotes(from: substantive)
+        let bulletSummary = Array(rankedSubstantive.prefix(5))
+        let highlights = Array(rankedSubstantive.prefix(5))
+        let importantLines = Array(rankedSubstantive.filter { score($0) >= 3 }.prefix(8))
+        let quickRead = Array(rankedSubstantive.prefix(3)).joined(separator: ". ")
         let summary = summarySentences.joined(separator: ". ")
+
         let actionItems = sentences
             .filter(isLikelyTask)
+            .filter { !isWeakAction($0) }
             .prefix(8)
             .map { sentence in
                 ActionItemDraft(
@@ -90,6 +99,7 @@ final class LocalInsightGenerator {
             }
 
         let decisionMatches: [String] = sentences
+            .filter { !containsNegation($0) }
             .filter {
                 let lowercased = $0.lowercased()
                 return lowercased.contains("decided") ||
@@ -98,6 +108,7 @@ final class LocalInsightGenerator {
             }
 
         let riskMatches: [String] = sentences
+            .filter { !containsNegation($0) }
             .filter {
                 let lowercased = $0.lowercased()
                 return lowercased.contains("blocked") ||
@@ -113,7 +124,7 @@ final class LocalInsightGenerator {
             highlights: highlights,
             importantLines: importantLines,
             quickRead: quickRead.isEmpty ? "Transcript captured." : quickRead + ".",
-            keyPoints: Array(rankedSentences.prefix(6)),
+            keyPoints: Array(rankedSubstantive.prefix(6)),
             decisions: Array(decisionMatches.prefix(5)),
             risks: Array(riskMatches.prefix(5)),
             actionItems: Array(actionItems)
@@ -174,6 +185,10 @@ final class LocalInsightGenerator {
     }
 
     private func detectOwner(in sentence: String) -> String {
+        if let personName = detectPersonNames(in: sentence).first {
+            return personName
+        }
+
         let words = sentence
             .replacingOccurrences(of: ",", with: " ")
             .split(separator: " ")
@@ -187,14 +202,33 @@ final class LocalInsightGenerator {
             }
         }
 
-        if let first = words.first, first.first?.isUppercase == true, words.count > 2 {
-            return first.trimmingCharacters(in: .punctuationCharacters)
-        }
-
         return "Unassigned"
     }
 
+    private func detectPersonNames(in sentence: String) -> [String] {
+        let tagger = NLTagger(tagSchemes: [.nameType])
+        tagger.string = sentence
+        let options: NLTagger.Options = [.omitPunctuation, .omitWhitespace, .joinNames]
+        var names: [String] = []
+        tagger.enumerateTags(
+            in: sentence.startIndex..<sentence.endIndex,
+            unit: .word,
+            scheme: .nameType,
+            options: options
+        ) { tag, range in
+            if tag == .personalName {
+                names.append(String(sentence[range]))
+            }
+            return true
+        }
+        return names
+    }
+
     private func detectDueDate(in sentence: String) -> Date? {
+        if let detected = detectDateViaDataDetector(in: sentence) {
+            return detected
+        }
+
         let lowercased = sentence.lowercased()
         let calendar = Calendar.current
         let now = Date()
@@ -222,6 +256,21 @@ final class LocalInsightGenerator {
             return nextDate(matchingWeekday: weekday)
         }
 
+        return nil
+    }
+
+    private func detectDateViaDataDetector(in sentence: String) -> Date? {
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue) else {
+            return nil
+        }
+        let range = NSRange(sentence.startIndex..<sentence.endIndex, in: sentence)
+        let matches = detector.matches(in: sentence, options: [], range: range)
+        let now = Date()
+        let twoYearsFromNow = Calendar.current.date(byAdding: .year, value: 2, to: now) ?? now
+        for match in matches {
+            guard let date = match.date, date > now, date < twoYearsFromNow else { continue }
+            return date
+        }
         return nil
     }
 
@@ -270,6 +319,67 @@ final class LocalInsightGenerator {
         }
 
         return .medium
+    }
+
+    private func cleanFillers(_ text: String) -> String {
+        var cleaned = text.replacingOccurrences(
+            of: #"\b(um+|uh+|erm+|ah+|hmm+)\b"#,
+            with: "",
+            options: [.regularExpression, .caseInsensitive]
+        )
+        cleaned = cleaned.replacingOccurrences(
+            of: #"\b(\w+)(\s+\1\b)+"#,
+            with: "$1",
+            options: [.regularExpression, .caseInsensitive]
+        )
+        cleaned = cleaned.replacingOccurrences(
+            of: #"\s+"#,
+            with: " ",
+            options: .regularExpression
+        )
+        cleaned = cleaned.replacingOccurrences(
+            of: #"\s+([,.!?])"#,
+            with: "$1",
+            options: .regularExpression
+        )
+        return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func deduplicate(_ sentences: [String]) -> [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for sentence in sentences {
+            let key = sentence
+                .lowercased()
+                .trimmingCharacters(in: CharacterSet.punctuationCharacters.union(.whitespaces))
+            guard !key.isEmpty, !seen.contains(key) else { continue }
+            seen.insert(key)
+            result.append(sentence)
+        }
+        return result
+    }
+
+    private func isSubstantive(_ sentence: String) -> Bool {
+        let wordCount = sentence
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .count
+        return wordCount >= 5
+    }
+
+    private func isWeakAction(_ sentence: String) -> Bool {
+        let lowercased = sentence.lowercased()
+        let weakSignals = [
+            "think about", "i'll think", "let me think", "let me see",
+            "not sure", "maybe we", "perhaps ", "might want", "could possibly"
+        ]
+        return weakSignals.contains { lowercased.contains($0) }
+    }
+
+    private func containsNegation(_ sentence: String) -> Bool {
+        let lowercased = sentence.lowercased()
+        let negations = ["don't", "do not", "didn't", "not a ", "no concern", "no risk", "not blocked", "wasn't"]
+        return negations.contains { lowercased.contains($0) }
     }
 
     #if canImport(FoundationModels)

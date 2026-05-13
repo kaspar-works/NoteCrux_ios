@@ -1,105 +1,208 @@
 import SwiftData
 import SwiftUI
-import LocalAuthentication
 
 struct VaultView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Meeting.createdAt, order: .reverse) private var meetings: [Meeting]
-    @Query(sort: \MeetingFolder.name) private var folders: [MeetingFolder]
-    @AppStorage("requireBiometrics") private var requireBiometrics = true
     @State private var searchText = ""
     @State private var selectedTag = "All"
-    @State private var selectedFolderID: UUID?
     @State private var dateFilter: MeetingDateFilter = .all
-    @State private var importanceFilter: MeetingImportanceFilter = .all
-    @State private var isCreatingFolder = false
-    @State private var newFolderName = ""
-    @State private var isUnlocked = false
-    @State private var authenticationMessage: String?
+    @State private var showDeleteAllConfirmation = false
+    @State private var meetingToDelete: Meeting?
+    @State private var meetingToDeleteTitle = ""
 
     private let search = LocalMeetingSearch()
 
+    private var activeMeetings: [Meeting] {
+        meetings.filter { !$0.isDeleted }
+    }
+
     private var availableTags: [String] {
-        let tags = Set(meetings.flatMap(\.tags))
+        let tags = Set(activeMeetings.flatMap(\.tags))
         return ["All"] + tags.sorted()
     }
 
     private var filteredMeetings: [Meeting] {
-        return meetings.filter { meeting in
-            let matchesSearch = search.matches(meeting, query: searchText)
+        activeMeetings.filter { meeting in
+            let matchesSearch = searchText.isEmpty || search.matches(meeting, query: searchText)
             let matchesTag = selectedTag == "All" || meeting.tags.contains(selectedTag)
-            let matchesFolder = selectedFolderID == nil || meeting.folder?.id == selectedFolderID
             let matchesDate = dateFilter.matches(meeting.createdAt)
-            let matchesImportance = importanceFilter.matches(meeting.importance)
-
-            return matchesSearch && matchesTag && matchesFolder && matchesDate && matchesImportance
+            return matchesSearch && matchesTag && matchesDate
         }
     }
 
+    private var groupedMeetings: [(String, [Meeting])] {
+        let grouped = Dictionary(grouping: filteredMeetings) { meeting in
+            meeting.createdAt.sectionHeader
+        }
+        return grouped.sorted { $0.value[0].createdAt > $1.value[0].createdAt }
+    }
+
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.ncBackground.ignoresSafeArea()
+        ZStack {
+            Color.ncBackground.ignoresSafeArea()
 
-                if requireBiometrics && !isUnlocked {
-                    LockedVaultView(message: authenticationMessage) {
-                        authenticate()
-                    }
-                } else {
-                    VStack(spacing: NCSpacing.md) {
-                        VaultFiltersView(
-                            folders: folders,
-                            availableTags: availableTags,
-                            selectedFolderID: $selectedFolderID,
-                            selectedTag: $selectedTag,
-                            dateFilter: $dateFilter,
-                            importanceFilter: $importanceFilter,
-                            createFolder: { isCreatingFolder = true }
-                        )
-                        .padding(.horizontal, NCSpacing.lg)
+            VStack(spacing: 0) {
+                // Header
+                VStack(spacing: NCSpacing.md) {
+                    HStack {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(Color.ncMuted)
+                        }
 
-                        if filteredMeetings.isEmpty {
-                            ContentUnavailableView(
-                                meetings.isEmpty ? "No meetings saved" : "No matching meetings",
-                                systemImage: "lock.doc",
-                                description: Text(meetings.isEmpty ? "Recorded meetings will appear here after local processing." : "Try a different keyword, folder, tag, date, or importance filter.")
-                            )
-                        } else {
-                            List(filteredMeetings) { meeting in
-                                NavigationLink {
-                                    InsightView(meeting: meeting)
+                        Spacer()
+
+                        Text("All Meetings")
+                            .font(.ncHeadline)
+                            .foregroundStyle(Color.ncInk)
+
+                        Spacer()
+
+                        if !activeMeetings.isEmpty {
+                            Menu {
+                                Button(role: .destructive) {
+                                    showDeleteAllConfirmation = true
                                 } label: {
-                                    MeetingRow(meeting: meeting)
+                                    Label("Delete All", systemImage: "trash")
                                 }
-                                .swipeActions(edge: .trailing) {
-                                    Button(role: .destructive) {
-                                        delete(meeting)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundStyle(Color.ncMuted)
+                            }
+                        } else {
+                            Color.clear.frame(width: 18, height: 18)
+                        }
+                    }
+                    .padding(.horizontal, NCSpacing.lg)
+                    .padding(.top, NCSpacing.md)
+
+                    // Search
+                    HStack(spacing: NCSpacing.sm) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color.ncMuted)
+                        TextField("Search meetings…", text: $searchText)
+                            .font(.ncCallout)
+                            .foregroundStyle(Color.ncInk)
+                    }
+                    .padding(.horizontal, NCSpacing.md)
+                    .padding(.vertical, NCSpacing.sm + 2)
+                    .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.small, style: .continuous))
+                    .padding(.horizontal, NCSpacing.lg)
+
+                    // Filters
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: NCSpacing.sm) {
+                            ForEach(availableTags, id: \.self) { tag in
+                                VaultFilterChip(title: tag, isSelected: selectedTag == tag) {
+                                    selectedTag = tag
+                                }
+                            }
+
+                            Divider().frame(height: 20)
+
+                            ForEach(MeetingDateFilter.allCases) { filter in
+                                VaultFilterChip(title: filter.rawValue, isSelected: dateFilter == filter) {
+                                    dateFilter = filter
+                                }
+                            }
+                        }
+                        .padding(.horizontal, NCSpacing.lg)
+                    }
+
+                    // Count
+                    HStack {
+                        Text("\(filteredMeetings.count) meeting\(filteredMeetings.count == 1 ? "" : "s")")
+                            .font(.ncCaption1.weight(.medium))
+                            .foregroundStyle(Color.ncMuted)
+                        Spacer()
+                    }
+                    .padding(.horizontal, NCSpacing.lg)
+                }
+                .padding(.bottom, NCSpacing.md)
+
+                // Meeting list
+                if filteredMeetings.isEmpty {
+                    Spacer()
+                    VStack(spacing: NCSpacing.lg) {
+                        Image(systemName: activeMeetings.isEmpty ? "waveform.circle" : "magnifyingglass")
+                            .font(.system(size: 40, weight: .light))
+                            .foregroundStyle(Color.ncPurple.opacity(0.5))
+                        Text(activeMeetings.isEmpty ? "No meetings yet" : "No matching meetings")
+                            .font(.ncHeadline)
+                            .foregroundStyle(Color.ncInk)
+                        Text(activeMeetings.isEmpty ? "Recorded meetings will appear here." : "Try a different search or filter.")
+                            .font(.ncFootnote)
+                            .foregroundStyle(Color.ncMuted)
+                    }
+                    Spacer()
+                } else {
+                    ScrollView(showsIndicators: false) {
+                        LazyVStack(alignment: .leading, spacing: NCSpacing.xl) {
+                            ForEach(groupedMeetings, id: \.0) { section, sectionMeetings in
+                                VStack(alignment: .leading, spacing: NCSpacing.md) {
+                                    Text(section.uppercased())
+                                        .font(.ncOverline)
+                                        .tracking(1.0)
+                                        .foregroundStyle(Color.ncMuted)
+                                        .padding(.horizontal, NCSpacing.lg)
+
+                                    ForEach(sectionMeetings) { meeting in
+                                        NavigationLink {
+                                            InsightView(meeting: meeting)
+                                        } label: {
+                                            VaultMeetingCard(meeting: meeting)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .contextMenu {
+                                            Button(role: .destructive) {
+                                                meetingToDeleteTitle = meeting.title
+                                                meetingToDelete = meeting
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
+                                        }
+                                        .padding(.horizontal, NCSpacing.lg)
                                     }
                                 }
                             }
-                            .scrollContentBackground(.hidden)
                         }
+                        .padding(.top, NCSpacing.sm)
+                        .padding(.bottom, 94)
+                    }
+                    .refreshable {
+                        // Force a re-render to refresh search/filter state
+                        try? await Task.sleep(nanoseconds: 300_000_000)
                     }
                 }
             }
-            .navigationTitle("Vault")
-            .searchable(text: $searchText, prompt: "Search transcripts, notes, tasks")
-            .alert("New Folder", isPresented: $isCreatingFolder) {
-                TextField("Folder name", text: $newFolderName)
-                Button("Create", action: createFolder)
-                Button("Cancel", role: .cancel) {
-                    newFolderName = ""
-                }
-            } message: {
-                Text("Group meetings by client, project, or topic.")
-            }
         }
-        .task {
-            if requireBiometrics && !isUnlocked {
-                authenticate()
+        .toolbar(.hidden, for: .navigationBar)
+        .alert("Delete All Meetings?", isPresented: $showDeleteAllConfirmation) {
+            Button("Delete All", role: .destructive) { deleteAll() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete all \(activeMeetings.count) meetings. This cannot be undone.")
+        }
+        .alert("Delete Meeting?", isPresented: Binding(
+            get: { meetingToDelete != nil },
+            set: { if !$0 { meetingToDelete = nil } }
+        )) {
+            Button("Delete", role: .destructive) {
+                if let meeting = meetingToDelete {
+                    delete(meeting)
+                    meetingToDelete = nil
+                }
             }
+            Button("Cancel", role: .cancel) { meetingToDelete = nil }
+        } message: {
+            Text("This will permanently delete \"\(meetingToDeleteTitle)\".")
         }
     }
 
@@ -108,94 +211,98 @@ struct VaultView: View {
         try? modelContext.save()
     }
 
-    private func createFolder() {
-        let name = newFolderName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-
-        modelContext.insert(MeetingFolder(name: name))
+    private func deleteAll() {
+        for meeting in meetings {
+            modelContext.delete(meeting)
+        }
         try? modelContext.save()
-        newFolderName = ""
-    }
-
-    private func authenticate() {
-        let context = LAContext()
-        var error: NSError?
-
-        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
-            authenticationMessage = error?.localizedDescription ?? "Biometric authentication is not available on this device."
-            return
-        }
-
-        context.evaluatePolicy(
-            .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: "Unlock your private meeting vault."
-        ) { success, error in
-            Task { @MainActor in
-                isUnlocked = success
-                authenticationMessage = success ? nil : error?.localizedDescription
-            }
-        }
     }
 }
 
-private struct VaultFiltersView: View {
-    let folders: [MeetingFolder]
-    let availableTags: [String]
-    @Binding var selectedFolderID: UUID?
-    @Binding var selectedTag: String
-    @Binding var dateFilter: MeetingDateFilter
-    @Binding var importanceFilter: MeetingImportanceFilter
-    let createFolder: () -> Void
+// MARK: - Meeting Card
+
+private struct VaultMeetingCard: View {
+    let meeting: Meeting
+
+    private var excerpt: String {
+        let candidates = [meeting.quickRead, meeting.summary, meeting.highlights.first ?? ""]
+        let text = candidates
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty } ?? "No notes yet."
+        return text.count > 120 ? String(text.prefix(117)) + "…" : text
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: NCSpacing.md) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: NCSpacing.sm) {
-                    FilterChip(title: "All Folders", isSelected: selectedFolderID == nil) {
-                        selectedFolderID = nil
-                    }
+        VStack(alignment: .leading, spacing: NCSpacing.sm + 2) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: NCSpacing.xs) {
+                    Text(meeting.title)
+                        .font(.ncHeadline)
+                        .foregroundStyle(Color.ncInk)
+                        .lineLimit(1)
 
-                    ForEach(folders) { folder in
-                        FilterChip(title: folder.name, isSelected: selectedFolderID == folder.id) {
-                            selectedFolderID = folder.id
-                        }
-                    }
-
-                    Button(action: createFolder) {
-                        Label("Folder", systemImage: "plus")
+                    HStack(spacing: NCSpacing.sm) {
+                        Text(meeting.createdAt.formatted(date: .abbreviated, time: .shortened))
                             .font(.ncCaption1)
-                            .padding(.horizontal, NCSpacing.md)
-                            .padding(.vertical, NCSpacing.sm)
+                            .foregroundStyle(Color.ncMuted)
+
+                        Text("•")
+                            .font(.ncCaption1)
+                            .foregroundStyle(Color.ncMuted)
+
+                        Text(meeting.duration.vaultDuration)
+                            .font(.ncCaption1)
+                            .foregroundStyle(Color.ncMuted)
                     }
-                    .buttonStyle(.bordered)
                 }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.ncMuted)
+                    .padding(.top, 4)
             }
 
-            HStack {
-                Picker("Tag", selection: $selectedTag) {
-                    ForEach(availableTags, id: \.self) { tag in
-                        Text(tag).tag(tag)
+            Text(excerpt)
+                .font(.ncFootnote)
+                .lineSpacing(2)
+                .foregroundStyle(Color.ncSecondary)
+                .lineLimit(2)
+
+            HStack(spacing: NCSpacing.sm) {
+                if !meeting.actionItems.isEmpty {
+                    HStack(spacing: NCSpacing.xs) {
+                        Image(systemName: "checkmark.square")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("\(meeting.actionItems.count)")
+                            .font(.ncCaption2.weight(.semibold))
                     }
+                    .foregroundStyle(Color.ncPurple)
+                    .padding(.horizontal, NCSpacing.sm)
+                    .padding(.vertical, NCSpacing.xs)
+                    .background(Color.ncPurple.opacity(0.10), in: Capsule())
                 }
 
-                Picker("Date", selection: $dateFilter) {
-                    ForEach(MeetingDateFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
-                    }
-                }
-
-                Picker("Importance", selection: $importanceFilter) {
-                    ForEach(MeetingImportanceFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
-                    }
+                ForEach(meeting.tags.prefix(2), id: \.self) { tag in
+                    Text(tag)
+                        .font(.ncCaption2)
+                        .foregroundStyle(Color.ncPurple)
+                        .padding(.horizontal, NCSpacing.sm)
+                        .padding(.vertical, NCSpacing.xs)
+                        .background(Color.ncPurple.opacity(0.10), in: Capsule())
                 }
             }
-            .pickerStyle(.menu)
         }
+        .padding(NCSpacing.lg)
+        .background(Color.ncSurface, in: RoundedRectangle(cornerRadius: NCRadius.medium, style: .continuous))
+        .ncShadow(.subtle)
     }
 }
 
-private struct FilterChip: View {
+// MARK: - Filter Chip
+
+private struct VaultFilterChip: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void
@@ -203,93 +310,45 @@ private struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.ncCaption1)
+                .font(.ncCaption1.weight(.semibold))
+                .foregroundStyle(isSelected ? .white : Color.ncMuted)
                 .padding(.horizontal, NCSpacing.md)
                 .padding(.vertical, NCSpacing.sm)
-                .foregroundStyle(isSelected ? .white : Color.ncSecondary)
-                .background(isSelected ? Color.ncPurple : Color.ncPurple.opacity(0.12), in: Capsule())
+                .background(isSelected ? Color.ncPurple : Color.ncSurface, in: Capsule())
+                .overlay(
+                    Capsule().strokeBorder(isSelected ? Color.clear : Color.ncDivider, lineWidth: 1)
+                )
         }
         .buttonStyle(.plain)
     }
 }
 
-private struct LockedVaultView: View {
-    let message: String?
-    let unlock: () -> Void
+// MARK: - Date Helpers
 
-    var body: some View {
-        VStack(spacing: NCSpacing.xl) {
-            Image(systemName: "faceid")
-                .font(.system(size: 52, weight: .medium))
-                .foregroundStyle(Color.ncPurple)
-
-            Text("Vault Locked")
-                .font(.ncTitle1)
-
-            Text(message ?? "Use Face ID to open your private meeting archive.")
-                .font(.ncBody)
-                .foregroundStyle(Color.ncMuted)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, NCSpacing.xxxl)
-
-            Button("Unlock Vault", action: unlock)
-                .buttonStyle(.borderedProminent)
-                .tint(Color.ncPurple)
-        }
-        .padding(NCSpacing.xxl)
+private extension Date {
+    var sectionHeader: String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(self) { return "Today" }
+        if calendar.isDateInYesterday(self) { return "Yesterday" }
+        if calendar.isDate(self, equalTo: Date(), toGranularity: .weekOfYear) { return "This Week" }
+        if calendar.isDate(self, equalTo: Date(), toGranularity: .month) { return "This Month" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: self)
     }
 }
 
-private struct MeetingRow: View {
-    let meeting: Meeting
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: NCSpacing.sm) {
-            HStack {
-                Text(meeting.title)
-                    .font(.ncHeadline)
-                Spacer()
-                Text(meeting.createdAt, style: .date)
-                    .font(.ncCaption1)
-                    .foregroundStyle(Color.ncMuted)
-            }
-
-            Text(meeting.summary.isEmpty ? "No summary available." : meeting.summary)
-                .font(.ncBody)
-                .foregroundStyle(Color.ncSecondary)
-                .lineLimit(2)
-
-            HStack(spacing: NCSpacing.md) {
-                Label("\(meeting.actionItems.count)", systemImage: "checklist")
-                Label(formatDuration(meeting.duration), systemImage: "timer")
-                if let folderName = meeting.folder?.name {
-                    Label(folderName, systemImage: "folder")
-                }
-            }
-            .font(.ncCaption1)
-            .foregroundStyle(Color.ncMuted)
-
-            if !meeting.tags.isEmpty {
-                HStack(spacing: NCSpacing.sm) {
-                    ForEach(meeting.tags, id: \.self) { tag in
-                        Text(tag)
-                            .font(.ncCaption2)
-                            .padding(.horizontal, NCSpacing.sm)
-                            .padding(.vertical, NCSpacing.xs)
-                            .background(Color.ncPurple.opacity(0.16), in: RoundedRectangle(cornerRadius: NCRadius.small))
-                    }
-                }
-            }
+private extension TimeInterval {
+    var vaultDuration: String {
+        let minutes = max(1, Int((self / 60).rounded()))
+        if minutes >= 60 {
+            return "\(minutes / 60)h \(minutes % 60)m"
         }
-        .padding(.vertical, NCSpacing.sm)
-    }
-
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let minutes = Int(duration) / 60
-        let seconds = Int(duration) % 60
-        return "\(minutes)m \(seconds)s"
+        return "\(minutes) min"
     }
 }
+
+// MARK: - Filters
 
 enum MeetingDateFilter: String, CaseIterable, Identifiable {
     case all = "Any Date"
@@ -302,14 +361,10 @@ enum MeetingDateFilter: String, CaseIterable, Identifiable {
     func matches(_ date: Date) -> Bool {
         let calendar = Calendar.current
         switch self {
-        case .all:
-            return true
-        case .today:
-            return calendar.isDateInToday(date)
-        case .week:
-            return calendar.isDate(date, equalTo: Date(), toGranularity: .weekOfYear)
-        case .month:
-            return calendar.isDate(date, equalTo: Date(), toGranularity: .month)
+        case .all: return true
+        case .today: return calendar.isDateInToday(date)
+        case .week: return calendar.isDate(date, equalTo: Date(), toGranularity: .weekOfYear)
+        case .month: return calendar.isDate(date, equalTo: Date(), toGranularity: .month)
         }
     }
 }
@@ -323,12 +378,9 @@ enum MeetingImportanceFilter: String, CaseIterable, Identifiable {
 
     func matches(_ importance: MeetingImportance) -> Bool {
         switch self {
-        case .all:
-            return true
-        case .important:
-            return importance == .important || importance == .critical
-        case .critical:
-            return importance == .critical
+        case .all: return true
+        case .important: return importance == .important || importance == .critical
+        case .critical: return importance == .critical
         }
     }
 }

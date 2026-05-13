@@ -1,0 +1,1 @@
+Initial release. Record, transcribe, and summarize meetings entirely on-device with Apple Intelligence.

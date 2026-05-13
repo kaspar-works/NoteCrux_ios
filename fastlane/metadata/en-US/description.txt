@@ -1,0 +1,25 @@
+NoteCrux turns every meeting into clear, actionable notes — all on your device, 100% free to use.
+
+Record any conversation, get an accurate AI transcript, a crisp summary, and auto-extracted action items — without your audio ever leaving your phone.
+
+WHAT IT DOES
+• Record meetings, calls, interviews, or voice memos
+• AI-powered transcripts that capture every word
+• Smart summaries that highlight what actually matters
+• Auto-extracted action items, decisions, and open questions
+• Task dashboard with priorities, due dates, and reminders
+• Folder-based vault for organizing your notes
+• Export everything to Markdown, PDF, or plain text
+• Calendar import so upcoming meetings are one tap away
+
+100% PRIVATE BY DESIGN
+Everything — recording, transcription, AI summaries, insights — runs locally on your iPhone using Apple's on-device Foundation Models. No cloud. No servers. No data collection. Your conversations stay yours.
+
+FREE — WITH ADS
+Every feature is free forever. NoteCrux is supported by a small, unobtrusive banner ad.
+
+REMOVE ADS FOR $4.99
+Prefer a distraction-free experience? A single one-time purchase permanently removes the banner ad across all your devices linked to your Apple ID. No subscriptions, no recurring fees — pay once, done.
+
+Privacy Policy: https://www.notion.so/NoteCrux-Privacy-Policy-348ea5c71e68803c9c55fabf36d025fc
+Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/

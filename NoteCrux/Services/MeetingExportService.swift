@@ -183,11 +183,9 @@ enum MeetingExportService {
         try markdown.write(to: mdURL, atomically: true, encoding: .utf8)
 
         var items: [Any] = [mdURL]
-        if let audioPath = meeting.audioFilePath {
-            let audioURL = URL(fileURLWithPath: audioPath)
-            if FileManager.default.fileExists(atPath: audioURL.path) {
-                items.append(audioURL)
-            }
+        if let audioURL = meeting.audioFileURL,
+           FileManager.default.fileExists(atPath: audioURL.path) {
+            items.append(audioURL)
         }
         return items
     }

@@ -18,11 +18,10 @@ struct AssistantView: View {
     private let engine = MeetingAssistantEngine()
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.ncBackground.ignoresSafeArea()
+        ZStack {
+            Color.ncBackground.ignoresSafeArea()
 
-                VStack(spacing: NCSpacing.md) {
+            VStack(spacing: NCSpacing.md) {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: NCSpacing.md) {
                             ForEach(messages) { message in
@@ -93,9 +92,10 @@ struct AssistantView: View {
                     .padding([.horizontal, .bottom])
                 }
             }
-            .navigationTitle("Ask")
-            .animation(.ncEaseOut, value: isAnswering)
-        }
+        .navigationTitle("Ask")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .animation(.ncEaseOut, value: isAnswering)
     }
 
     private func ask() {

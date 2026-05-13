@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5B3FFF"/>
+      <stop offset="50%" stop-color="#4B2FE8"/>
+      <stop offset="100%" stop-color="#3A1FCC"/>
+    </linearGradient>
+    <radialGradient id="highlight" cx="30%" cy="25%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="micGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#E8E4FF"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="14"/>
+      <feOffset dx="0" dy="10" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.35"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Base (iOS will mask to rounded rect) -->
+  <rect width="1024" height="1024" fill="url(#bgGrad)"/>
+  <rect width="1024" height="1024" fill="url(#highlight)"/>
+
+  <!-- Sparkle accents -->
+  <g opacity="0.5">
+    <circle cx="180" cy="200" r="4" fill="#ffffff"/>
+    <circle cx="860" cy="240" r="6" fill="#ffffff"/>
+    <circle cx="820" cy="820" r="5" fill="#ffffff"/>
+    <circle cx="220" cy="860" r="3" fill="#ffffff"/>
+    <circle cx="900" cy="500" r="3" fill="#ffffff"/>
+    <circle cx="140" cy="560" r="4" fill="#ffffff"/>
+  </g>
+
+  <!-- Microphone icon -->
+  <g transform="translate(512, 512)" filter="url(#softShadow)">
+    <!-- Mic body -->
+    <rect x="-90" y="-260" width="180" height="340" rx="90" ry="90" fill="url(#micGrad)"/>
+    <!-- Stand arc -->
+    <path d="M -190 40 A 190 190 0 0 0 190 40" fill="none" stroke="url(#micGrad)" stroke-width="36" stroke-linecap="round"/>
+    <!-- Stand pole -->
+    <rect x="-20" y="60" width="40" height="140" rx="8" fill="url(#micGrad)"/>
+    <!-- Base -->
+    <rect x="-110" y="195" width="220" height="32" rx="16" fill="url(#micGrad)"/>
+  </g>
+
+  <!-- Soundwave arc -->
+  <g transform="translate(512, 450)" stroke="#ffffff" stroke-linecap="round" fill="none" opacity="0.85">
+    <path d="M -260 0 A 260 260 0 0 1 260 0" stroke-width="12" stroke-dasharray="2 26"/>
+  </g>
+</svg>
